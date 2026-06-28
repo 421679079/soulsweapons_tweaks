@@ -29,6 +29,14 @@ public final class TelegraphVfx {
                 ticks, -radius, entity.getId() + encodeHeight(height));
     }
 
+    public static void purpleAttackWarningRing(LivingEntity entity, int ticks, double radius, double height) {
+        if (!(entity.level() instanceof ServerLevel level) || ticks <= 0 || radius <= 0.0D) {
+            return;
+        }
+        sendAttackWarningRing(level, entity.getX(), entity.getY() + height, entity.getZ(),
+                -ticks, -radius, entity.getId() + encodeHeight(height));
+    }
+
     public static void attackWarningRingAt(Entity source, Vec3 origin, int ticks, double radius, boolean red) {
         if (!(source.level() instanceof ServerLevel level) || ticks <= 0 || radius <= 0.0D) {
             return;
@@ -125,7 +133,14 @@ public final class TelegraphVfx {
         sendGroundWarningRectangle(level, center, ticks, -radius, radius);
     }
 
-    public static void groundWarningCircleTracking(LivingEntity target, int ticks, double radius, boolean red) {
+    public static void purpleGroundWarningCircle(Entity source, Vec3 center, int ticks, double radius) {
+        if (!(source.level() instanceof ServerLevel level) || ticks <= 0 || radius <= 0.0D) {
+            return;
+        }
+        sendGroundWarningRectangle(level, center, ticks, -radius, -radius);
+    }
+
+    public static void groundWarningCircleTracking(Entity target, int ticks, double radius, boolean red) {
         if (!(target.level() instanceof ServerLevel level) || ticks <= 0 || radius <= 0.0D) {
             return;
         }
@@ -137,7 +152,7 @@ public final class TelegraphVfx {
                 TRACKING_SENTINEL + target.getId());
     }
 
-    public static void groundWarningCircleTrackingGround(LivingEntity target, int ticks, double radius, boolean red) {
+    public static void groundWarningCircleTrackingGround(Entity target, int ticks, double radius, boolean red) {
         if (!(target.level() instanceof ServerLevel level) || ticks <= 0 || radius <= 0.0D) {
             return;
         }
@@ -149,7 +164,7 @@ public final class TelegraphVfx {
                 -(TRACKING_SENTINEL + target.getId()));
     }
 
-    public static void groundWarningCircleTrackingGroundThenFreeze(LivingEntity target, int ticks,
+    public static void groundWarningCircleTrackingGroundThenFreeze(Entity target, int ticks,
                                                                    int trackingTicks, double radius, boolean red) {
         if (!(target.level() instanceof ServerLevel level) || ticks <= 0 || trackingTicks <= 0 || radius <= 0.0D) {
             return;

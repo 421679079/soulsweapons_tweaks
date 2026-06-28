@@ -13,10 +13,25 @@ import java.util.List;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 public final class ChaosMonarchConfig {
-    public static final List<String> DEFAULT_CONTROLLED_PROJECTILES = List.of("minecraft:spectral_arrow", "minecraft:shulker_bullet", "minecraft:experience_bottle", "starfantasy:fire_combo", "minecraft:snowball");
-    public static final List<String> DEFAULT_RANDOM_PROJECTILES = List.of("minecraft:arrow", "minecraft:dragon_fireball", "minecraft:fireball", "minecraft:llama_spit", "minecraft:small_fireball", "minecraft:spectral_arrow", "minecraft:wither_skull", "minecraft:egg", "minecraft:experience_bottle", "minecraft:snowball", "minecraft:trident", "soulsweapons:cannonball_entity_type", "soulsweapons:charged_arrow_entity", "soulsweapons:comet_spear_entity", "soulsweapons:swordspear_entity", "soulsweapons:big_moonlight_projectile", "soulsweapons:silver_bullet_entity");
-    public static final List<String> DEFAULT_RANDOM_HOSTILE_SUMMONS = List.of("minecraft:blaze", "minecraft:creeper", "minecraft:drowned", "minecraft:enderman", "minecraft:silverfish", "minecraft:skeleton", "minecraft:slime", "minecraft:spider", "minecraft:witch", "minecraft:wither_skeleton", "minecraft:zombie");
-    public static final List<String> DEFAULT_RANDOM_PASSIVE_SUMMONS = List.of("minecraft:bat", "minecraft:bee", "minecraft:chicken", "minecraft:cod", "minecraft:cow", "minecraft:glow_squid", "minecraft:horse", "minecraft:llama", "minecraft:wandering_trader", "minecraft:mooshroom", "minecraft:pig", "minecraft:polar_bear", "minecraft:pufferfish", "minecraft:rabbit", "minecraft:salmon");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_1_BUFFS = List.of("minecraft:strength:1");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_2_BUFFS = List.of("minecraft:resistance:1");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_3_BUFFS = List.of("minecraft:haste:1");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_4_BUFFS = List.of();
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_5_BUFFS = List.of("minecraft:strength:1", "minecraft:resistance:1", "minecraft:haste:1");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_6_BUFFS = DEFAULT_CHAOS_MONARCH_PHASE_5_BUFFS;
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_1_DEBUFFS = List.of("minecraft:weakness:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_2_DEBUFFS = List.of("minecraft:slowness:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_3_DEBUFFS = List.of("minecraft:poison:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_4_DEBUFFS = List.of("minecraft:wither:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_5_DEBUFFS = List.of("minecraft:weakness:1:200", "minecraft:poison:1:200", "minecraft:slowness:1:200", "minecraft:wither:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_6_DEBUFFS = DEFAULT_CHAOS_MONARCH_PHASE_5_DEBUFFS;
+    public static final List<String> DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS = List.of("minecraft:wither_skeleton=2");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS = List.of("minecraft:weakness:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS = List.of("goety:freezing:1:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS = List.of("goety:spasms:10:200");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_4_HIT_EFFECTS = List.of("goety:void_touched:1:100");
+    public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_5_HIT_EFFECTS = List.of();
+    public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_6_HIT_EFFECTS = List.of();
     public static final List<String> DEFAULT_NIGHT_PROWLER_PHASE_1_BUFFS = List.of("minecraft:regeneration:1", "minecraft:speed:10");
     public static final List<String> DEFAULT_NIGHT_PROWLER_PHASE_2_BUFFS = List.of("minecraft:regeneration:2", "minecraft:speed:10", "minecraft:resistance:2");
     public static final List<String> DEFAULT_DAY_STALKER_PHASE_1_BUFFS = List.of("minecraft:regeneration:2", "minecraft:speed:10");
@@ -26,12 +41,33 @@ public final class ChaosMonarchConfig {
     public static final List<String> DEFAULT_DAY_STALKER_REACTION_TRAP_HIT_EFFECTS = List.of("minecraft:wither:1:200");
     public static final List<String> DEFAULT_NIGHT_PROWLER_REACTION_AOE_HIT_EFFECTS = List.of("minecraft:wither:1:200");
     public static final ForgeConfigSpec SPEC;
-    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_PROJECTILE_LIFETIME_TICKS;
-    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_CHAOS_SKULL_COOLDOWN_TICKS;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_CONTROLLED_PROJECTILES;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_RANDOM_PROJECTILES;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_RANDOM_HOSTILE_SUMMONS;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_RANDOM_PASSIVE_SUMMONS;
+    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_NEARBY_PLAYER_DEBUFF_RADIUS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_1_BUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_2_BUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_3_BUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_4_BUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_5_BUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_6_BUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_1_DEBUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_2_DEBUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_3_DEBUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_4_DEBUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_5_DEBUFFS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_6_DEBUFFS;
+    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS;
+    private static final ForgeConfigSpec.DoubleValue CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_1;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_2;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_3;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_4;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_5;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_6;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_4_HIT_EFFECTS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_5_HIT_EFFECTS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_6_HIT_EFFECTS;
     private static final ForgeConfigSpec.IntValue DRAUGR_BOSS_GUARD_BREAK_REQUIRED_GUARDS;
     private static final ForgeConfigSpec.DoubleValue DRAUGR_BOSS_NORMAL_DAMAGE_MULTIPLIER;
     private static final ForgeConfigSpec.IntValue NIGHT_SHADE_GUARD_BREAK_REQUIRED_GUARDS;
@@ -50,7 +86,6 @@ public final class ChaosMonarchConfig {
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DAY_STALKER_PHASE_2_BUFFS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DAY_STALKER_NEARBY_PLAYER_DEBUFFS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DAY_STALKER_METEOR_HIT_EFFECTS;
-    private static final ForgeConfigSpec.ConfigValue<String> DAY_STALKER_REACTION_TRAP_ENTITY;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DAY_STALKER_REACTION_TRAP_HIT_EFFECTS;
     private static final ForgeConfigSpec.IntValue TWIN_BOSS_NEARBY_PLAYER_DEBUFF_RADIUS;
     private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_WARNING_TICKS;
@@ -60,28 +95,60 @@ public final class ChaosMonarchConfig {
     private ChaosMonarchConfig() {
     }
 
-    public static int getProjectileLifetimeTicks() {
-        return (Integer)CHAOS_MONARCH_PROJECTILE_LIFETIME_TICKS.get();
+    public static int getChaosMonarchNearbyPlayerDebuffRadius() {
+        return CHAOS_MONARCH_NEARBY_PLAYER_DEBUFF_RADIUS.get();
     }
 
-    public static List<String> getControlledProjectiles() {
-        return ChaosMonarchConfig.castList((List)CHAOS_MONARCH_CONTROLLED_PROJECTILES.get());
+    public static List<String> getChaosMonarchPhaseBuffs(int phase) {
+        return switch (phase) {
+            case 2 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_2_BUFFS.get());
+            case 3 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_3_BUFFS.get());
+            case 4 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_4_BUFFS.get());
+            case 5 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_5_BUFFS.get());
+            case 6 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_6_BUFFS.get());
+            default -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_1_BUFFS.get());
+        };
     }
 
-    public static int getChaosSkullCooldownTicks() {
-        return (Integer)CHAOS_MONARCH_CHAOS_SKULL_COOLDOWN_TICKS.get();
+    public static List<String> getChaosMonarchPhaseDebuffs(int phase) {
+        return switch (phase) {
+            case 2 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_2_DEBUFFS.get());
+            case 3 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_3_DEBUFFS.get());
+            case 4 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_4_DEBUFFS.get());
+            case 5 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_5_DEBUFFS.get());
+            case 6 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_6_DEBUFFS.get());
+            default -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_PHASE_1_DEBUFFS.get());
+        };
     }
 
-    public static List<String> getRandomProjectiles() {
-        return ChaosMonarchConfig.castList((List)CHAOS_MONARCH_RANDOM_PROJECTILES.get());
+    public static int getChaosMonarchGuardBreakRequiredGuards() {
+        return CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS.get();
     }
 
-    public static List<String> getRandomHostileSummons() {
-        return ChaosMonarchConfig.castList((List)CHAOS_MONARCH_RANDOM_HOSTILE_SUMMONS.get());
+    public static float getChaosMonarchNormalDamageMultiplier() {
+        return CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER.get().floatValue();
     }
 
-    public static List<String> getRandomPassiveSummons() {
-        return ChaosMonarchConfig.castList((List)CHAOS_MONARCH_RANDOM_PASSIVE_SUMMONS.get());
+    public static List<String> getChaosMonarchTeleportSummons(int phase) {
+        return switch (phase) {
+            case 2 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_2.get());
+            case 3 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_3.get());
+            case 4 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_4.get());
+            case 5 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_5.get());
+            case 6 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_6.get());
+            default -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_1.get());
+        };
+    }
+
+    public static List<String> getChaosMonarchLightningHitEffects(int phase) {
+        return switch (phase) {
+            case 2 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS.get());
+            case 3 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS.get());
+            case 4 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_LIGHTNING_PHASE_4_HIT_EFFECTS.get());
+            case 5 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_LIGHTNING_PHASE_5_HIT_EFFECTS.get());
+            case 6 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_LIGHTNING_PHASE_6_HIT_EFFECTS.get());
+            default -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS.get());
+        };
     }
 
     public static int getDraugrBossGuardBreakRequiredGuards() {
@@ -156,10 +223,6 @@ public final class ChaosMonarchConfig {
         return ChaosMonarchConfig.castList((List)DAY_STALKER_METEOR_HIT_EFFECTS.get());
     }
 
-    public static String getDayStalkerReactionTrapEntity() {
-        return DAY_STALKER_REACTION_TRAP_ENTITY.get();
-    }
-
     public static List<String> getDayStalkerReactionTrapHitEffects() {
         return ChaosMonarchConfig.castList((List)DAY_STALKER_REACTION_TRAP_HIT_EFFECTS.get());
     }
@@ -192,12 +255,33 @@ public final class ChaosMonarchConfig {
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         builder.push("chaos_monarch");
-        CHAOS_MONARCH_PROJECTILE_LIFETIME_TICKS = builder.comment("Hard lifetime for Chaos Monarch projectiles.").defineInRange("projectile_lifetime_ticks", 200, 0, 1200);
-        CHAOS_MONARCH_CHAOS_SKULL_COOLDOWN_TICKS = builder.comment("Cooldown for the Chaos Skull summon attack.").defineInRange("chaos_skull_cooldown_ticks", 600, 0, 72000);
-        CHAOS_MONARCH_CONTROLLED_PROJECTILES = builder.comment("Projectile pool for the controlled-projectile attack.").defineListAllowEmpty(List.of("controlled_projectiles"), DEFAULT_CONTROLLED_PROJECTILES, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_RANDOM_PROJECTILES = builder.comment("Projectile pool for the random projectile barrage attack.").defineListAllowEmpty(List.of("random_projectiles"), DEFAULT_RANDOM_PROJECTILES, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_RANDOM_HOSTILE_SUMMONS = builder.comment("Random hostile summon pool used by Chaos Skull.").defineListAllowEmpty(List.of("random_hostile_summons"), DEFAULT_RANDOM_HOSTILE_SUMMONS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_RANDOM_PASSIVE_SUMMONS = builder.comment("Random passive summon pool used by Chaos Skull.").defineListAllowEmpty(List.of("random_passive_summons"), DEFAULT_RANDOM_PASSIVE_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_NEARBY_PLAYER_DEBUFF_RADIUS = builder.comment("Radius for applying phase debuffs to players fighting Chaos Monarch.").defineInRange("nearby_player_debuff_radius", 64, 1, 256);
+        CHAOS_MONARCH_PHASE_1_BUFFS = builder.comment("Permanent phase 1 buffs for Chaos Monarch.").defineListAllowEmpty(List.of("phase_1_buffs"), DEFAULT_CHAOS_MONARCH_PHASE_1_BUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_2_BUFFS = builder.comment("Permanent phase 2 buffs for Chaos Monarch.").defineListAllowEmpty(List.of("phase_2_buffs"), DEFAULT_CHAOS_MONARCH_PHASE_2_BUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_3_BUFFS = builder.comment("Permanent phase 3 buffs for Chaos Monarch.").defineListAllowEmpty(List.of("phase_3_buffs"), DEFAULT_CHAOS_MONARCH_PHASE_3_BUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_4_BUFFS = builder.comment("Permanent phase 4 buffs for Chaos Monarch.").defineListAllowEmpty(List.of("phase_4_buffs"), DEFAULT_CHAOS_MONARCH_PHASE_4_BUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_5_BUFFS = builder.comment("Permanent phase 5 buffs for Chaos Monarch.").defineListAllowEmpty(List.of("phase_5_buffs"), DEFAULT_CHAOS_MONARCH_PHASE_5_BUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_6_BUFFS = builder.comment("Permanent phase 6 buffs for Chaos Monarch.").defineListAllowEmpty(List.of("phase_6_buffs"), DEFAULT_CHAOS_MONARCH_PHASE_6_BUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_1_DEBUFFS = builder.comment("Phase 1 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_1_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_1_DEBUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_2_DEBUFFS = builder.comment("Phase 2 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_2_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_2_DEBUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_3_DEBUFFS = builder.comment("Phase 3 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_3_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_3_DEBUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_4_DEBUFFS = builder.comment("Phase 4 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_4_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_4_DEBUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_5_DEBUFFS = builder.comment("Phase 5 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_5_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_5_DEBUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_PHASE_6_DEBUFFS = builder.comment("Phase 6 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_6_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_6_DEBUFFS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS = builder.comment("Perfect guards required to stun Chaos Monarch.").defineInRange("guard_break_required_guards", 8, 1, 100);
+        CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER = builder.comment("Damage multiplier while Chaos Monarch is not stunned.").defineInRange("normal_damage_multiplier", 0.5D, 0.0D, 10.0D);
+        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_1 = builder.comment("Phase 1 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_1"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_2 = builder.comment("Phase 2 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_2"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_3 = builder.comment("Phase 3 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_3"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_4 = builder.comment("Phase 4 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_4"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_5 = builder.comment("Phase 5 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_5"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_6 = builder.comment("Phase 6 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_6"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS = builder.comment("Phase 1 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_1_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS = builder.comment("Phase 2 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_2_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS = builder.comment("Phase 3 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_3_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_LIGHTNING_PHASE_4_HIT_EFFECTS = builder.comment("Phase 4 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_4_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_4_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_LIGHTNING_PHASE_5_HIT_EFFECTS = builder.comment("Phase 5 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_5_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_5_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
+        CHAOS_MONARCH_LIGHTNING_PHASE_6_HIT_EFFECTS = builder.comment("Phase 6 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_6_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_6_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
         builder.pop();
         builder.push("draugr_boss");
         DRAUGR_BOSS_GUARD_BREAK_REQUIRED_GUARDS = builder.comment("Perfect SlashBlade guards required to posture-break Draugr Boss.").defineInRange("guard_break_required_guards", 6, 1, 100);
@@ -230,7 +314,6 @@ public final class ChaosMonarchConfig {
         DAY_STALKER_PHASE_2_BUFFS = builder.comment("Permanent phase 2 buffs for Day Stalker.").defineListAllowEmpty(List.of("phase_2_buffs"), DEFAULT_DAY_STALKER_PHASE_2_BUFFS, ChaosMonarchConfig::isValidString);
         DAY_STALKER_NEARBY_PLAYER_DEBUFFS = builder.comment("Debuffs applied to players in combat with Day Stalker.").defineListAllowEmpty(List.of("nearby_player_debuffs"), DEFAULT_TWIN_BOSS_NEARBY_PLAYER_DEBUFFS, ChaosMonarchConfig::isValidString);
         DAY_STALKER_METEOR_HIT_EFFECTS = builder.comment("Effects applied when a Day Stalker ambience meteor damages a target.").defineListAllowEmpty(List.of("meteor_hit_effects"), DEFAULT_TWIN_BOSS_METEOR_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
-        DAY_STALKER_REACTION_TRAP_ENTITY = builder.comment("Visual trap entity spawned by Day Stalker's phase 2 reaction trap pattern.").define("reaction_trap_entity", "soulsweapons:flame_pillar");
         DAY_STALKER_REACTION_TRAP_HIT_EFFECTS = builder.comment("Effects applied when a Day Stalker reaction trap damages a target.").defineListAllowEmpty(List.of("reaction_trap_hit_effects"), DEFAULT_DAY_STALKER_REACTION_TRAP_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
         builder.pop();
         SPEC = builder.build();

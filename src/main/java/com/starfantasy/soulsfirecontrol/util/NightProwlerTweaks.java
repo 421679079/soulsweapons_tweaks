@@ -1,6 +1,7 @@
 package com.starfantasy.soulsfirecontrol.util;
 
 import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphVfx;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -8,6 +9,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.soulsweaponry.config.ConfigConstructor;
 import net.soulsweaponry.entity.mobs.NightProwler;
 
 public final class NightProwlerTweaks {
@@ -150,6 +152,16 @@ public final class NightProwlerTweaks {
         } finally {
             SUPPRESSED_GUARD_BREAK_SOURCE.remove();
         }
+    }
+
+    public static float modifiedDamage(NightProwler boss, float damage) {
+        if (boss == null || damage <= 0.0F) {
+            return damage;
+        }
+        return damage
+                * ConfigConstructor.night_prowler_damage_modifier
+                * (boss.isEmpowered() ? 1.25F : 1.0F)
+                * (boss.hasEffect(MobEffects.DAMAGE_BOOST) ? 1.25F : 1.0F);
     }
 
     public static void warnBlackflameGround(NightProwler boss, Vec3 center, int ticks) {

@@ -18,6 +18,9 @@ public final class TwinMeteorEntityRegistry {
     public static final RegistryObject<EntityType<TwinMeteorEntity>> NIGHT_PROWLER_METEOR =
             ENTITIES.register("night_prowler_meteor", () -> meteorType("night_prowler_meteor"));
 
+    public static final RegistryObject<EntityType<TwinMeteorEntity>> CHAOS_FROST_METEOR =
+            ENTITIES.register("chaos_frost_meteor", () -> meteorType("chaos_frost_meteor"));
+
     public static final RegistryObject<EntityType<NightProwlerLightningAoeEntity>> NIGHT_PROWLER_LIGHTNING_AOE =
             ENTITIES.register("night_prowler_lightning_aoe",
                     () -> EntityType.Builder.<NightProwlerLightningAoeEntity>of(
@@ -29,6 +32,30 @@ public final class TwinMeteorEntityRegistry {
                             .noSave()
                             .noSummon()
                             .build(StarFantasySoulsFireControl.id("night_prowler_lightning_aoe").toString()));
+
+    public static final RegistryObject<EntityType<ChaosBarrageProjectileEntity>> CHAOS_BARRAGE_PROJECTILE =
+            ENTITIES.register("chaos_barrage_projectile",
+                    () -> EntityType.Builder.<ChaosBarrageProjectileEntity>of(
+                                    ChaosBarrageProjectileEntity::new, MobCategory.MISC)
+                            .sized(0.6F, 0.6F)
+                            .clientTrackingRange(96)
+                            .updateInterval(1)
+                            .fireImmune()
+                            .noSave()
+                            .noSummon()
+                            .build(StarFantasySoulsFireControl.id("chaos_barrage_projectile").toString()));
+
+    public static final RegistryObject<EntityType<ChaosWitherSkullProjectileEntity>> CHAOS_WITHER_SKULL =
+            ENTITIES.register("chaos_wither_skull",
+                    () -> EntityType.Builder.<ChaosWitherSkullProjectileEntity>of(
+                                    ChaosWitherSkullProjectileEntity::new, MobCategory.MISC)
+                            .sized(0.3125F, 0.3125F)
+                            .clientTrackingRange(96)
+                            .updateInterval(1)
+                            .fireImmune()
+                            .noSave()
+                            .noSummon()
+                            .build(StarFantasySoulsFireControl.id("chaos_wither_skull").toString()));
 
     private TwinMeteorEntityRegistry() {
     }

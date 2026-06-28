@@ -36,3 +36,10 @@ mandatory = true
 versionRange = "[1.9.65,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.soulsweapons_tweaks]]
+modId = "goety"
+mandatory = true
+versionRange = "[2.5.54,)"
+ordering = "AFTER"
+side = "BOTH"

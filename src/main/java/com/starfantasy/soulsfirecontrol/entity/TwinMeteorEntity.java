@@ -1,7 +1,9 @@
 package com.starfantasy.soulsfirecontrol.entity;
 
 import com.starfantasy.soulsfirecontrol.combat.effect.ConfiguredMobEffect;
+import com.starfantasy.soulsfirecontrol.combat.chaosmonarch.ChaosMonarchPhaseManager;
 import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
+import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphVfx;
 import net.minecraft.core.particles.ParticleTypes;
@@ -21,6 +23,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
+import net.soulsweaponry.entity.mobs.ChaosMonarch;
 import net.soulsweaponry.entity.mobs.DayStalker;
 import net.soulsweaponry.entity.mobs.NightProwler;
 import net.soulsweaponry.entity.mobs.WarmthEntity;
@@ -42,6 +45,8 @@ public class TwinMeteorEntity extends Entity {
     private double impactY;
     private double impactZ;
     private int warningTicks = 40;
+    private int chaosEffectPhase;
+    private float configuredDamage = DAMAGE;
 
     public TwinMeteorEntity(EntityType<? extends TwinMeteorEntity> type, Level level) {
         super(type, level);
@@ -60,8 +65,19 @@ public class TwinMeteorEntity extends Entity {
         this.setDeltaMovement(velocity);
     }
 
+    public void configureChaos(@Nullable LivingEntity owner, Vec3 impact,
+                               int warningTicks, int effectPhase, float damage) {
+        this.configure(owner, impact, warningTicks);
+        this.chaosEffectPhase = Math.max(1, Math.min(6, effectPhase));
+        this.configuredDamage = Math.max(0.0F, damage);
+    }
+
     public boolean isDayMeteor() {
         return this.getType() == TwinMeteorEntityRegistry.DAY_STALKER_METEOR.get();
+    }
+
+    public boolean isFrostMeteor() {
+        return this.getType() == TwinMeteorEntityRegistry.CHAOS_FROST_METEOR.get();
     }
 
     @Override
@@ -93,6 +109,10 @@ public class TwinMeteorEntity extends Entity {
         this.impactY = tag.getDouble("ImpactY");
         this.impactZ = tag.getDouble("ImpactZ");
         this.warningTicks = Math.max(1, tag.getInt("WarningTicks"));
+        this.chaosEffectPhase = tag.getInt("ChaosEffectPhase");
+        if (tag.contains("ConfiguredDamage")) {
+            this.configuredDamage = tag.getFloat("ConfiguredDamage");
+        }
     }
 
     @Override
@@ -104,6 +124,8 @@ public class TwinMeteorEntity extends Entity {
         tag.putDouble("ImpactY", this.impactY);
         tag.putDouble("ImpactZ", this.impactZ);
         tag.putInt("WarningTicks", this.warningTicks);
+        tag.putInt("ChaosEffectPhase", this.chaosEffectPhase);
+        tag.putFloat("ConfiguredDamage", this.configuredDamage);
     }
 
     @Override
@@ -118,7 +140,13 @@ public class TwinMeteorEntity extends Entity {
             double x = this.getX() + (this.random.nextDouble() - 0.5D) * spread;
             double y = this.getY() + (this.random.nextDouble() - 0.5D) * spread;
             double z = this.getZ() + (this.random.nextDouble() - 0.5D) * spread;
-            if (this.isDayMeteor()) {
+            if (this.isFrostMeteor()) {
+                this.level().addParticle(ParticleTypes.SNOWFLAKE, x, y, z, motion.x, motion.y, motion.z);
+                if (i == 0) {
+                    this.level().addParticle(ParticleTypes.END_ROD, x, y, z,
+                            motion.x * 0.25D, motion.y * 0.25D, motion.z * 0.25D);
+                }
+            } else if (this.isDayMeteor()) {
                 this.level().addParticle(ParticleTypes.FLAME, x, y, z, motion.x, motion.y, motion.z);
                 if (i == 0) {
                     this.level().addParticle(ParticleTypes.SMOKE, x, y, z, motion.x * 0.4D, motion.y * 0.4D, motion.z * 0.4D);
@@ -146,15 +174,22 @@ public class TwinMeteorEntity extends Entity {
         DamageSource source = owner == null
                 ? this.damageSources().magic()
                 : this.damageSources().indirectMagic(this, owner);
+        float damage = this.configuredDamage > 0.0F ? this.configuredDamage : DAMAGE;
         AABB searchBox = new AABB(center, center).inflate(EXPLOSION_RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, searchBox)) {
             if (this.shouldSkipTarget(owner, target)
                     || !intersectsSphere(target.getBoundingBox(), center, EXPLOSION_RADIUS)) {
                 continue;
             }
-            if (target.hurt(source, DAMAGE)) {
+            boolean damaged = owner instanceof ChaosMonarch chaosMonarch
+                    ? ChaosMonarchTweaks.hurtWithoutGuardBreak(chaosMonarch, target, source, damage)
+                    : target.hurt(source, damage);
+            if (damaged) {
                 for (ConfiguredMobEffect effect : this.hitEffects(owner)) {
                     target.addEffect(effect.createInstance());
+                }
+                if (owner instanceof ChaosMonarch && this.chaosEffectPhase == 1) {
+                    ChaosMonarchTweaks.igniteIfNotBurning(target, 20);
                 }
             }
         }
@@ -167,12 +202,18 @@ public class TwinMeteorEntity extends Entity {
         if (owner instanceof NightProwler) {
             return ConfiguredMobEffect.parseList(ChaosMonarchConfig.getNightProwlerMeteorHitEffects());
         }
+        if (owner instanceof ChaosMonarch chaosMonarch) {
+            int phase = this.chaosEffectPhase > 0
+                    ? this.chaosEffectPhase
+                    : ChaosMonarchPhaseManager.getCurrentPhase(chaosMonarch);
+            return ConfiguredMobEffect.parseList(ChaosMonarchConfig.getChaosMonarchLightningHitEffects(phase));
+        }
         return List.of();
     }
 
     private boolean shouldSkipTarget(@Nullable LivingEntity owner, LivingEntity target) {
         if (target == owner || !target.isAlive() || target.isInvulnerable()
-                || target instanceof DayStalker || target instanceof NightProwler
+                || target instanceof DayStalker || target instanceof NightProwler || target instanceof ChaosMonarch
                 || target instanceof WarmthEntity) {
             return true;
         }

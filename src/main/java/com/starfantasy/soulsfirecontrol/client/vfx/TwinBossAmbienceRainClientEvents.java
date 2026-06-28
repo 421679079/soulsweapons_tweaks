@@ -20,6 +20,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.soulsweaponry.entity.mobs.ChaosMonarch;
 import net.soulsweaponry.entity.mobs.DayStalker;
 import net.soulsweaponry.entity.mobs.NightProwler;
 import org.joml.Matrix4f;
@@ -43,6 +44,16 @@ public final class TwinBossAmbienceRainClientEvents {
     private static float nightRainLevel;
     private static float oldDayRainLevel;
     private static float dayRainLevel;
+    private static final float[] oldChaosRainLevels = new float[6];
+    private static final float[] chaosRainLevels = new float[6];
+    private static final float[][] CHAOS_RAIN_COLORS = {
+            {1.0F, 0.38F, 0.05F},
+            {0.62F, 0.88F, 1.0F},
+            {1.0F, 0.95F, 0.08F},
+            {0.95F, 0.95F, 1.0F},
+            {0.45F, 0.45F, 0.50F},
+            {1.0F, 0.08F, 0.04F}
+    };
 
     private TwinBossAmbienceRainClientEvents() {
     }
@@ -57,11 +68,18 @@ public final class TwinBossAmbienceRainClientEvents {
         LocalPlayer player = minecraft.player;
         oldNightRainLevel = nightRainLevel;
         oldDayRainLevel = dayRainLevel;
+        for (int i = 0; i < chaosRainLevels.length; ++i) {
+            oldChaosRainLevels[i] = chaosRainLevels[i];
+        }
         if (level == null || player == null) {
             nightRainLevel = 0.0F;
             oldNightRainLevel = 0.0F;
             dayRainLevel = 0.0F;
             oldDayRainLevel = 0.0F;
+            for (int i = 0; i < chaosRainLevels.length; ++i) {
+                chaosRainLevels[i] = 0.0F;
+                oldChaosRainLevels[i] = 0.0F;
+            }
             return;
         }
 
@@ -71,8 +89,17 @@ public final class TwinBossAmbienceRainClientEvents {
         boolean dayRain = level.getEntitiesOfClass(DayStalker.class,
                 player.getBoundingBox().inflate(ACTIVE_SCAN_RADIUS),
                 boss -> boss.isAlive() && boss.isPhaseTwo()).size() > 0;
+        boolean[] chaosActive = new boolean[6];
+        for (ChaosMonarch boss : level.getEntitiesOfClass(ChaosMonarch.class,
+                player.getBoundingBox().inflate(ACTIVE_SCAN_RADIUS),
+                ChaosMonarch::isAlive)) {
+            chaosActive[phaseFromHealth(boss) - 1] = true;
+        }
         nightRainLevel = easeRainLevel(nightRainLevel, nightRain);
         dayRainLevel = easeRainLevel(dayRainLevel, dayRain);
+        for (int i = 0; i < chaosRainLevels.length; ++i) {
+            chaosRainLevels[i] = easeRainLevel(chaosRainLevels[i], chaosActive[i]);
+        }
     }
 
     @SubscribeEvent
@@ -89,7 +116,13 @@ public final class TwinBossAmbienceRainClientEvents {
         float partialTick = event.getPartialTick();
         float nightIntensity = Mth.lerp(partialTick, oldNightRainLevel, nightRainLevel);
         float dayIntensity = Mth.lerp(partialTick, oldDayRainLevel, dayRainLevel);
-        if (nightIntensity <= 0.001F && dayIntensity <= 0.001F) {
+        boolean chaosVisible = false;
+        float[] chaosIntensities = new float[6];
+        for (int i = 0; i < chaosIntensities.length; ++i) {
+            chaosIntensities[i] = Mth.lerp(partialTick, oldChaosRainLevels[i], chaosRainLevels[i]);
+            chaosVisible |= chaosIntensities[i] > 0.001F;
+        }
+        if (nightIntensity <= 0.001F && dayIntensity <= 0.001F && !chaosVisible) {
             return;
         }
 
@@ -127,6 +160,14 @@ public final class TwinBossAmbienceRainClientEvents {
             renderRainLayer(buffer, matrix, cameraPos, cameraX, cameraZ, yMin, yMax, age, nightIntensity,
                     true, 0.46F, 0.08F, 1.0F);
         }
+        for (int i = 0; i < chaosIntensities.length; ++i) {
+            if (chaosIntensities[i] <= 0.001F) {
+                continue;
+            }
+            float[] color = CHAOS_RAIN_COLORS[i];
+            renderRainLayer(buffer, matrix, cameraPos, cameraX, cameraZ, yMin, yMax, age,
+                    chaosIntensities[i], true, color[0], color[1], color[2]);
+        }
 
         tesselator.end();
         RenderSystem.depthMask(true);
@@ -138,6 +179,26 @@ public final class TwinBossAmbienceRainClientEvents {
     private static float easeRainLevel(float current, boolean active) {
         float step = active ? FADE_IN_STEP : -FADE_OUT_STEP;
         return Mth.clamp(current + step, 0.0F, 1.0F);
+    }
+
+    private static int phaseFromHealth(ChaosMonarch boss) {
+        float rate = boss.getHealth() / Math.max(1.0F, boss.getMaxHealth());
+        if (rate > 0.85F) {
+            return 1;
+        }
+        if (rate > 0.70F) {
+            return 2;
+        }
+        if (rate > 0.55F) {
+            return 3;
+        }
+        if (rate > 0.40F) {
+            return 4;
+        }
+        if (rate > 0.25F) {
+            return 5;
+        }
+        return 6;
     }
 
     private static void renderRainLayer(BufferBuilder buffer, Matrix4f matrix, Vec3 cameraPos,

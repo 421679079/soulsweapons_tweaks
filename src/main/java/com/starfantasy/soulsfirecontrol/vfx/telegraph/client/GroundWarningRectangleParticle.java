@@ -25,6 +25,7 @@ public final class GroundWarningRectangleParticle extends TextureSheetParticle {
     private final float halfWidth;
     private final float halfLength;
     private final boolean redWarning;
+    private final boolean purpleWarning;
     private final int trackedEntityId;
     private final boolean trackGroundBelow;
     private final int trackingFreezeTicks;
@@ -34,10 +35,11 @@ public final class GroundWarningRectangleParticle extends TextureSheetParticle {
                                            SpriteSet sprites) {
         super(level, x, y, z, xSpeed, ySpeed, zSpeed);
         this.sprites = sprites;
-        this.redWarning = xSpeed < 0.0D;
-        this.halfWidth = Math.max(0.1F, (float) Math.abs(xSpeed));
-        this.trackGroundBelow = zSpeed < 0.0D;
         double encodedZSpeed = Math.abs(zSpeed);
+        this.purpleWarning = xSpeed < 0.0D && zSpeed < 0.0D && encodedZSpeed < TRACKING_SENTINEL;
+        this.redWarning = xSpeed < 0.0D && !this.purpleWarning;
+        this.halfWidth = Math.max(0.1F, (float) Math.abs(xSpeed));
+        this.trackGroundBelow = zSpeed < 0.0D && !this.purpleWarning;
         if (encodedZSpeed >= TRACKING_SENTINEL) {
             this.halfLength = this.halfWidth;
             double trackingData = encodedZSpeed - TRACKING_SENTINEL;
@@ -55,7 +57,11 @@ public final class GroundWarningRectangleParticle extends TextureSheetParticle {
         this.hasPhysics = false;
         this.gravity = 0.0F;
         this.alpha = BASE_ALPHA;
-        if (this.redWarning) {
+        if (this.purpleWarning) {
+            this.rCol = 0.72F;
+            this.gCol = 0.12F;
+            this.bCol = 1.0F;
+        } else if (this.redWarning) {
             this.rCol = 1.0F;
             this.gCol = 0.05F;
             this.bCol = 0.03F;

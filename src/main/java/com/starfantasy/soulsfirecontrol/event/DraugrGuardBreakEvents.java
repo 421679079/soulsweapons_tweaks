@@ -1,12 +1,14 @@
 package com.starfantasy.soulsfirecontrol.event;
 
 import com.starfantasy.soulsfirecontrol.StarFantasySoulsFireControl;
+import com.starfantasy.soulsfirecontrol.combat.guard.ChaosMonarchGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.DayStalkerGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.GuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.NightShadeGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.NightProwlerGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.SlashBladeGuardCompat;
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
+import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -15,6 +17,7 @@ import net.soulsweaponry.entity.mobs.DayStalker;
 import net.soulsweaponry.entity.mobs.DraugrBoss;
 import net.soulsweaponry.entity.mobs.NightShade;
 import net.soulsweaponry.entity.mobs.NightProwler;
+import net.soulsweaponry.entity.mobs.ChaosMonarch;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -49,6 +52,11 @@ public final class DraugrGuardBreakEvents {
                 && SlashBladeGuardCompat.isUsableMainhandSlashBlade(player)) {
             DayStalkerGuardBreakTracker.recordPerfectGuard(stalker, player);
         }
+        ChaosMonarch monarch = findChaosMonarchDirectAttacker(event.getSource());
+        if (monarch != null && ChaosMonarchTweaks.rewardsGuardBreak(monarch)
+                && SlashBladeGuardCompat.isUsableMainhandSlashBlade(player)) {
+            ChaosMonarchGuardBreakTracker.recordPerfectGuard(monarch, player);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -63,6 +71,10 @@ public final class DraugrGuardBreakEvents {
         DayStalker stalker = findDayStalkerDirectAttacker(event.getSource());
         if (stalker != null && !DayStalkerTweaks.suppressesGuardBreak(stalker)) {
             DayStalkerGuardBreakTracker.recordPlayerHit(stalker);
+        }
+        ChaosMonarch monarch = findChaosMonarchDirectAttacker(event.getSource());
+        if (monarch != null && ChaosMonarchTweaks.rewardsGuardBreak(monarch)) {
+            ChaosMonarchGuardBreakTracker.recordPlayerHit(monarch);
         }
     }
 
@@ -106,6 +118,17 @@ public final class DraugrGuardBreakEvents {
             return boss;
         }
         if (direct == null && source.getEntity() instanceof DayStalker boss) {
+            return boss;
+        }
+        return null;
+    }
+
+    private static ChaosMonarch findChaosMonarchDirectAttacker(DamageSource source) {
+        Entity direct = source.getDirectEntity();
+        if (direct instanceof ChaosMonarch boss) {
+            return boss;
+        }
+        if (direct == null && source.getEntity() instanceof ChaosMonarch boss) {
             return boss;
         }
         return null;

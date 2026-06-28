@@ -166,11 +166,7 @@ public final class DayStalkerReactionTrapManager {
         if (!(boss.level() instanceof ServerLevel level)) {
             return false;
         }
-        ResourceLocation id = ResourceLocation.tryParse(ChaosMonarchConfig.getDayStalkerReactionTrapEntity());
-        if (id == null) {
-            return false;
-        }
-        EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(id);
+        EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(GOETY_FIRE_BLAST_TRAP);
         if (type == null) {
             return false;
         }
@@ -193,15 +189,11 @@ public final class DayStalkerReactionTrapManager {
             damaging.setParticleAmountMod(1.5F);
         }
         invokeIfPresent(visual, "setOwner", LivingEntity.class, boss);
-        invokeIfPresent(visual, "setAreaOfEffect", float.class, visualAreaOfEffect(id));
+        invokeIfPresent(visual, "setAreaOfEffect", float.class, 0.0F);
         invokeIfPresent(visual, "setExtraDamage", float.class, 0.0F);
         invokeIfPresent(visual, "setBurning", int.class, 0);
         invokeIfPresent(visual, "setImmediate", boolean.class, false);
         return level.addFreshEntity(visual);
-    }
-
-    private static float visualAreaOfEffect(ResourceLocation id) {
-        return GOETY_FIRE_BLAST_TRAP.equals(id) ? 0.0F : (float) TRAP_RADIUS;
     }
 
     private static void detonate(ServerLevel level, PendingTrap trap) {

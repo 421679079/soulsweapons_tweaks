@@ -20,12 +20,14 @@ public final class AttackWarningRingParticle extends TextureSheetParticle {
     private final int trackedEntityId;
     private final double trackedYOffset;
     private final boolean redWarning;
+    private final boolean purpleWarning;
 
     private AttackWarningRingParticle(ClientLevel level, double x, double y, double z,
                                       double xSpeed, double ySpeed, double zSpeed, SpriteSet sprites) {
         super(level, x, y, z, xSpeed, ySpeed, zSpeed);
         this.sprites = sprites;
         this.redWarning = xSpeed < 0.0D;
+        this.purpleWarning = ySpeed < 0.0D;
         this.initialRadius = Math.max(0.1F, (float) Math.abs(xSpeed));
         this.lifetime = Math.max(1, (int) Math.round(Math.abs(ySpeed)));
         double trackingData = Math.abs(zSpeed);
@@ -92,6 +94,12 @@ public final class AttackWarningRingParticle extends TextureSheetParticle {
     }
 
     private void updateColor() {
+        if (this.purpleWarning) {
+            this.rCol = 0.66F;
+            this.gCol = 0.08F;
+            this.bCol = 1.0F;
+            return;
+        }
         if (this.redWarning) {
             this.rCol = 1.0F;
             this.gCol = 0.05F;

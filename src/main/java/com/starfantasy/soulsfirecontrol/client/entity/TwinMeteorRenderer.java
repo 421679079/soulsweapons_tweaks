@@ -18,6 +18,8 @@ public class TwinMeteorRenderer extends EntityRenderer<TwinMeteorEntity> {
             new ResourceLocation("minecraft", "textures/item/fire_charge.png");
     private static final ResourceLocation NIGHT_TEXTURE =
             new ResourceLocation("minecraft", "textures/entity/enderdragon/dragon_fireball.png");
+    private static final ResourceLocation FROST_TEXTURE =
+            new ResourceLocation("soulsweapons_tweaks", "textures/entity/chaos_frost_meteor.png");
 
     public TwinMeteorRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -45,6 +47,9 @@ public class TwinMeteorRenderer extends EntityRenderer<TwinMeteorEntity> {
 
     @Override
     public ResourceLocation getTextureLocation(TwinMeteorEntity entity) {
+        if (entity.isFrostMeteor()) {
+            return FROST_TEXTURE;
+        }
         return entity.isDayMeteor() ? DAY_TEXTURE : NIGHT_TEXTURE;
     }
 

@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import net.soulsweaponry.config.ConfigConstructor;
 import net.soulsweaponry.entity.mobs.NightProwler;
 import net.soulsweaponry.entity.mobs.Soulmass;
+import net.soulsweaponry.entity.projectile.MoonlightProjectile;
 import net.soulsweaponry.entity.projectile.NightSkull;
 import net.soulsweaponry.entity.projectile.noclip.BlackflameExplosionEntity;
 import net.soulsweaponry.entity.projectile.noclip.BlackflameSnakeEntity;
@@ -125,6 +126,43 @@ public abstract class NightProwlerGoalMixin {
     @Inject(method = "spawnNightsEdge", at = @At("HEAD"))
     private void starfantasy$warnNightsEdgeGround(Vec3 position, Integer warmup, Float yaw, CallbackInfo ci) {
         NightProwlerTweaks.warnNightsEdgeGround(this.boss, position, warmup);
+    }
+
+    @Inject(method = "shootSplitSkulls", at = @At("HEAD"), cancellable = true)
+    private void starfantasy$replaceSplitSkullsWithNightSkulls(Vec3 target, int amount, float velocity, CallbackInfo ci) {
+        this.boss.level().playSound(null, this.boss.blockPosition(),
+                SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 1.0F, 1.0F);
+        starfantasy$shootNightSkullFan(target, amount, velocity, 5.0F);
+        ci.cancel();
+    }
+
+    @Inject(method = "shootSplitBoth", at = @At("HEAD"), cancellable = true)
+    private void starfantasy$replaceSplitBothWithNightSkulls(Vec3 target, int amount, CallbackInfo ci) {
+        this.boss.level().playSound(null, this.boss.blockPosition(),
+                SoundRegistry.MOONLIGHT_BIG_EVENT.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
+        this.boss.level().playSound(null, this.boss.blockPosition(),
+                SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 1.0F, 1.0F);
+        int middle = Mth.floor(amount / 2.0F);
+        for (int i = -middle; i <= middle; ++i) {
+            Vec3 vec = target.yRot((float) Math.toRadians(8.0F * i));
+            boolean shootSkull = this.flipCounter % 2 == 0 == (i % 2 == 0);
+            if (shootSkull) {
+                starfantasy$shootNightSkull(vec, 1.75F);
+                continue;
+            }
+            MoonlightProjectile moonlight = EntityRegistry.MOONLIGHT_BIG_ENTITY_TYPE.get().create(this.boss.level());
+            if (moonlight == null) {
+                continue;
+            }
+            moonlight.setAgeAndPoints(30, 150, 4);
+            moonlight.setBaseDamage(this.getModifiedDamage(20.0F));
+            moonlight.setPosRaw(this.boss.getX(), this.boss.getEyeY(), this.boss.getZ());
+            moonlight.shoot(vec.x(), vec.y(), vec.z(), 1.75F, 1.0F);
+            moonlight.setOwner(this.boss);
+            this.boss.level().addFreshEntity(moonlight);
+        }
+        ++this.flipCounter;
+        ci.cancel();
     }
 
     @Inject(method = "m_8036_", at = @At("HEAD"), cancellable = true)
@@ -806,5 +844,26 @@ public abstract class NightProwlerGoalMixin {
             return Vec3.ZERO;
         }
         return horizontal.normalize().scale(Math.min(3.0D, horizontal.length()));
+    }
+
+    @Unique
+    private void starfantasy$shootNightSkullFan(Vec3 target, int amount, float velocity, float spreadDegrees) {
+        int middle = Mth.floor(amount / 2.0F);
+        for (int i = -middle; i <= middle; ++i) {
+            Vec3 vec = target.yRot((float) Math.toRadians(spreadDegrees * i));
+            starfantasy$shootNightSkull(vec, velocity);
+        }
+    }
+
+    @Unique
+    private void starfantasy$shootNightSkull(Vec3 direction, float velocity) {
+        NightSkull skull = EntityRegistry.NIGHT_SKULL.get().create(this.boss.level());
+        if (skull == null) {
+            return;
+        }
+        skull.setPosRaw(this.boss.getX(), this.boss.getEyeY(), this.boss.getZ());
+        skull.shoot(direction.x(), direction.y(), direction.z(), velocity, 1.0F);
+        skull.setOwner(this.boss);
+        this.boss.level().addFreshEntity(skull);
     }
 }
