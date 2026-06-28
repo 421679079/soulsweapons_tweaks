@@ -20,11 +20,12 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.soulsweaponry.entity.mobs.DayStalker;
 import net.soulsweaponry.entity.mobs.NightProwler;
 import org.joml.Matrix4f;
 
 @Mod.EventBusSubscriber(modid = StarFantasySoulsFireControl.MOD_ID, value = Dist.CLIENT)
-public final class NightProwlerReverseRainClientEvents {
+public final class TwinBossAmbienceRainClientEvents {
     private static final ResourceLocation RAIN_TEXTURE =
             new ResourceLocation("minecraft", "textures/environment/rain.png");
     private static final double ACTIVE_SCAN_RADIUS = 128.0D;
@@ -34,15 +35,16 @@ public final class NightProwlerReverseRainClientEvents {
     private static final float FADE_IN_STEP = 0.025F;
     private static final float FADE_OUT_STEP = 0.04F;
     private static final float BASE_ALPHA = 0.64F;
-    private static final float PURPLE_R = 0.46F;
-    private static final float PURPLE_G = 0.08F;
-    private static final float PURPLE_B = 1.0F;
     private static final float SCROLL_SPEED = 0.085F;
+    private static final float TEXEL_HEIGHT = 0.18F;
+    private static final float SEED_SCROLL_SCALE = 0.03125F;
 
-    private static float oldRainLevel;
-    private static float rainLevel;
+    private static float oldNightRainLevel;
+    private static float nightRainLevel;
+    private static float oldDayRainLevel;
+    private static float dayRainLevel;
 
-    private NightProwlerReverseRainClientEvents() {
+    private TwinBossAmbienceRainClientEvents() {
     }
 
     @SubscribeEvent
@@ -53,22 +55,28 @@ public final class NightProwlerReverseRainClientEvents {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         LocalPlayer player = minecraft.player;
-        oldRainLevel = rainLevel;
+        oldNightRainLevel = nightRainLevel;
+        oldDayRainLevel = dayRainLevel;
         if (level == null || player == null) {
-            rainLevel = 0.0F;
-            oldRainLevel = 0.0F;
+            nightRainLevel = 0.0F;
+            oldNightRainLevel = 0.0F;
+            dayRainLevel = 0.0F;
+            oldDayRainLevel = 0.0F;
             return;
         }
 
-        boolean shouldRain = level.getEntitiesOfClass(NightProwler.class,
+        boolean nightRain = level.getEntitiesOfClass(NightProwler.class,
                 player.getBoundingBox().inflate(ACTIVE_SCAN_RADIUS),
                 boss -> boss.isAlive() && boss.isPhaseTwo()).size() > 0;
-        float step = shouldRain ? FADE_IN_STEP : -FADE_OUT_STEP;
-        rainLevel = Mth.clamp(rainLevel + step, 0.0F, 1.0F);
+        boolean dayRain = level.getEntitiesOfClass(DayStalker.class,
+                player.getBoundingBox().inflate(ACTIVE_SCAN_RADIUS),
+                boss -> boss.isAlive() && boss.isPhaseTwo()).size() > 0;
+        nightRainLevel = easeRainLevel(nightRainLevel, nightRain);
+        dayRainLevel = easeRainLevel(dayRainLevel, dayRain);
     }
 
     @SubscribeEvent
-    public static void renderReverseRain(RenderLevelStageEvent event) {
+    public static void renderAmbienceRain(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             return;
         }
@@ -79,8 +87,9 @@ public final class NightProwlerReverseRainClientEvents {
         }
 
         float partialTick = event.getPartialTick();
-        float intensity = Mth.lerp(partialTick, oldRainLevel, rainLevel);
-        if (intensity <= 0.001F) {
+        float nightIntensity = Mth.lerp(partialTick, oldNightRainLevel, nightRainLevel);
+        float dayIntensity = Mth.lerp(partialTick, oldDayRainLevel, dayRainLevel);
+        if (nightIntensity <= 0.001F && dayIntensity <= 0.001F) {
             return;
         }
 
@@ -110,6 +119,30 @@ public final class NightProwlerReverseRainClientEvents {
         buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
 
         float age = (float) level.getGameTime() + partialTick;
+        if (dayIntensity > 0.001F) {
+            renderRainLayer(buffer, matrix, cameraPos, cameraX, cameraZ, yMin, yMax, age, dayIntensity,
+                    false, 1.0F, 0.72F, 0.08F);
+        }
+        if (nightIntensity > 0.001F) {
+            renderRainLayer(buffer, matrix, cameraPos, cameraX, cameraZ, yMin, yMax, age, nightIntensity,
+                    true, 0.46F, 0.08F, 1.0F);
+        }
+
+        tesselator.end();
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        RenderSystem.enableCull();
+        poseStack.popPose();
+    }
+
+    private static float easeRainLevel(float current, boolean active) {
+        float step = active ? FADE_IN_STEP : -FADE_OUT_STEP;
+        return Mth.clamp(current + step, 0.0F, 1.0F);
+    }
+
+    private static void renderRainLayer(BufferBuilder buffer, Matrix4f matrix, Vec3 cameraPos,
+                                        int cameraX, int cameraZ, int yMin, int yMax, float age,
+                                        float intensity, boolean reverse, float red, float green, float blue) {
         for (int z = cameraZ - RENDER_RADIUS; z <= cameraZ + RENDER_RADIUS; z++) {
             for (int x = cameraX - RENDER_RADIUS; x <= cameraX + RENDER_RADIUS; x++) {
                 double distanceX = x + 0.5D - cameraPos.x;
@@ -120,8 +153,9 @@ public final class NightProwlerReverseRainClientEvents {
                     continue;
                 }
 
-                float alpha = ((1.0F - Mth.clamp(normalized, 0.0F, 1.0F)
-                        * Mth.clamp(normalized, 0.0F, 1.0F)) * 0.52F + 0.28F) * intensity * BASE_ALPHA;
+                float clampedDistance = Mth.clamp(normalized, 0.0F, 1.0F);
+                float alpha = ((1.0F - clampedDistance * clampedDistance) * 0.52F + 0.28F)
+                        * intensity * BASE_ALPHA;
                 if (alpha <= 0.01F) {
                     continue;
                 }
@@ -133,29 +167,28 @@ public final class NightProwlerReverseRainClientEvents {
                 double offsetZ = Math.sin(angle) * width;
                 double centerX = x + 0.5D;
                 double centerZ = z + 0.5D;
-                float scroll = age * SCROLL_SPEED + ((seed >>> 17) & 31L) * 0.03125F;
-                float v0 = yMin * 0.18F + scroll;
-                float v1 = yMax * 0.18F + scroll;
+                float seedOffset = ((seed >>> 17) & 31L) * SEED_SCROLL_SCALE;
+                float scroll = (reverse ? -age : age) * SCROLL_SPEED + seedOffset;
+                float v0 = yMin * TEXEL_HEIGHT + scroll;
+                float v1 = yMax * TEXEL_HEIGHT + scroll;
 
-                vertex(buffer, matrix, centerX - offsetX, yMax, centerZ - offsetZ, 0.0F, v1, alpha);
-                vertex(buffer, matrix, centerX + offsetX, yMax, centerZ + offsetZ, 1.0F, v1, alpha);
-                vertex(buffer, matrix, centerX + offsetX, yMin, centerZ + offsetZ, 1.0F, v0, alpha);
-                vertex(buffer, matrix, centerX - offsetX, yMin, centerZ - offsetZ, 0.0F, v0, alpha);
+                vertex(buffer, matrix, centerX - offsetX, yMax, centerZ - offsetZ, 0.0F, v1,
+                        red, green, blue, alpha);
+                vertex(buffer, matrix, centerX + offsetX, yMax, centerZ + offsetZ, 1.0F, v1,
+                        red, green, blue, alpha);
+                vertex(buffer, matrix, centerX + offsetX, yMin, centerZ + offsetZ, 1.0F, v0,
+                        red, green, blue, alpha);
+                vertex(buffer, matrix, centerX - offsetX, yMin, centerZ - offsetZ, 0.0F, v0,
+                        red, green, blue, alpha);
             }
         }
-
-        tesselator.end();
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-        RenderSystem.enableCull();
-        poseStack.popPose();
     }
 
     private static void vertex(BufferBuilder buffer, Matrix4f matrix, double x, double y, double z,
-                               float u, float v, float alpha) {
+                               float u, float v, float red, float green, float blue, float alpha) {
         buffer.vertex(matrix, (float) x, (float) y, (float) z)
                 .uv(u, v)
-                .color(PURPLE_R, PURPLE_G, PURPLE_B, alpha)
+                .color(red, green, blue, alpha)
                 .endVertex();
     }
 
