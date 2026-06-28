@@ -2,6 +2,7 @@ package com.starfantasy.soulsfirecontrol.mixin;
 
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
 import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
+import com.starfantasy.soulsfirecontrol.util.MoonknightTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import com.starfantasy.soulsfirecontrol.util.ReturningKnightTweaks;
 import net.minecraft.world.damagesource.DamageSource;
@@ -53,6 +54,7 @@ public abstract class NoLootSoulmassMixin {
         return entity.getTags().contains(NightProwlerTweaks.NO_LOOT_SOULMASS_TAG)
                 || entity.getTags().contains(DayStalkerTweaks.NO_LOOT_WARMTH_TAG)
                 || entity.getTags().contains(ChaosMonarchTweaks.NO_LOOT_SUMMON_TAG)
+                || entity.getTags().contains(MoonknightTweaks.NO_LOOT_SUMMON_TAG)
                 || entity.getTags().contains(ReturningKnightTweaks.NO_LOOT_SUMMON_TAG);
     }
 

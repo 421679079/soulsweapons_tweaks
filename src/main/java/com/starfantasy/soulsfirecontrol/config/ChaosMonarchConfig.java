@@ -71,6 +71,8 @@ public final class ChaosMonarchConfig {
     private static final ForgeConfigSpec.IntValue DRAUGR_BOSS_GUARD_BREAK_REQUIRED_GUARDS;
     private static final ForgeConfigSpec.DoubleValue DRAUGR_BOSS_NORMAL_DAMAGE_MULTIPLIER;
     private static final ForgeConfigSpec.IntValue NIGHT_SHADE_GUARD_BREAK_REQUIRED_GUARDS;
+    private static final ForgeConfigSpec.IntValue MOONKNIGHT_GUARD_BREAK_REQUIRED_GUARDS;
+    private static final ForgeConfigSpec.DoubleValue MOONKNIGHT_PHASE_2_NORMAL_DAMAGE_MULTIPLIER;
     private static final ForgeConfigSpec.IntValue NIGHT_PROWLER_GUARD_BREAK_REQUIRED_GUARDS;
     private static final ForgeConfigSpec.DoubleValue NIGHT_PROWLER_PHASE_1_DAMAGE_MULTIPLIER;
     private static final ForgeConfigSpec.DoubleValue NIGHT_PROWLER_PHASE_2_NORMAL_DAMAGE_MULTIPLIER;
@@ -161,6 +163,14 @@ public final class ChaosMonarchConfig {
 
     public static int getNightShadeGuardBreakRequiredGuards() {
         return NIGHT_SHADE_GUARD_BREAK_REQUIRED_GUARDS.get();
+    }
+
+    public static int getMoonknightGuardBreakRequiredGuards() {
+        return MOONKNIGHT_GUARD_BREAK_REQUIRED_GUARDS.get();
+    }
+
+    public static float getMoonknightPhaseTwoNormalDamageMultiplier() {
+        return MOONKNIGHT_PHASE_2_NORMAL_DAMAGE_MULTIPLIER.get().floatValue();
     }
 
     public static int getNightProwlerGuardBreakRequiredGuards() {
@@ -289,6 +299,10 @@ public final class ChaosMonarchConfig {
         builder.pop();
         builder.push("night_shade");
         NIGHT_SHADE_GUARD_BREAK_REQUIRED_GUARDS = builder.comment("Perfect SlashBlade guards required to execute Night Shade.").defineInRange("guard_break_required_guards", 3, 1, 100);
+        builder.pop();
+        builder.push("moonknight");
+        MOONKNIGHT_GUARD_BREAK_REQUIRED_GUARDS = builder.comment("Perfect guards required to force Moonknight's Core Beam.").defineInRange("guard_break_required_guards", 8, 1, 100);
+        MOONKNIGHT_PHASE_2_NORMAL_DAMAGE_MULTIPLIER = builder.comment("Phase 2 damage multiplier before Core Beam is forced.").defineInRange("phase_2_normal_damage_multiplier", 0.7D, 0.0D, 10.0D);
         builder.pop();
         builder.push("chaos_twins");
         TWIN_BOSS_NEARBY_PLAYER_DEBUFF_RADIUS = builder.comment("Radius for applying combat debuffs to players fighting Day Stalker or Night Prowler.").defineInRange("nearby_player_debuff_radius", 64, 1, 256);

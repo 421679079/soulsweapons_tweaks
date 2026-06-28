@@ -5,12 +5,14 @@ import com.starfantasy.soulsfirecontrol.combat.guard.AccursedLordGuardBreakTrack
 import com.starfantasy.soulsfirecontrol.combat.guard.ChaosMonarchGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.DayStalkerGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.GuardBreakTracker;
+import com.starfantasy.soulsfirecontrol.combat.guard.MoonknightGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.NightShadeGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.NightProwlerGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.SlashBladeGuardCompat;
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
 import com.starfantasy.soulsfirecontrol.util.AccursedLordTweaks;
 import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
+import com.starfantasy.soulsfirecontrol.util.MoonknightTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -21,6 +23,7 @@ import net.soulsweaponry.entity.mobs.NightShade;
 import net.soulsweaponry.entity.mobs.NightProwler;
 import net.soulsweaponry.entity.mobs.ChaosMonarch;
 import net.soulsweaponry.entity.mobs.AccursedLordBoss;
+import net.soulsweaponry.entity.mobs.Moonknight;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -64,6 +67,11 @@ public final class DraugrGuardBreakEvents {
         if (accursedLord != null && AccursedLordTweaks.rewardsGuardBreak(accursedLord)
                 && SlashBladeGuardCompat.isUsableMainhandSlashBlade(player)) {
             AccursedLordGuardBreakTracker.recordPerfectGuard(accursedLord, player);
+        }
+        Moonknight moonknight = findMoonknightDirectAttacker(event.getSource());
+        if (moonknight != null && MoonknightTweaks.rewardsGuardBreak(moonknight)
+                && SlashBladeGuardCompat.isUsableMainhandSlashBlade(player)) {
+            MoonknightGuardBreakTracker.recordPerfectGuard(moonknight, player);
         }
     }
 
@@ -148,6 +156,17 @@ public final class DraugrGuardBreakEvents {
             return boss;
         }
         if (direct == null && source.getEntity() instanceof AccursedLordBoss boss) {
+            return boss;
+        }
+        return null;
+    }
+
+    private static Moonknight findMoonknightDirectAttacker(DamageSource source) {
+        Entity direct = source.getDirectEntity();
+        if (direct instanceof Moonknight boss) {
+            return boss;
+        }
+        if (direct == null && source.getEntity() instanceof Moonknight boss) {
             return boss;
         }
         return null;
