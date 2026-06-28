@@ -1,6 +1,7 @@
 package com.starfantasy.soulsfirecontrol.mixin;
 
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
+import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -49,7 +50,8 @@ public abstract class NoLootSoulmassMixin {
     private boolean starfantasy$isNoLootSoulmass() {
         Entity entity = (Entity) (Object) this;
         return entity.getTags().contains(NightProwlerTweaks.NO_LOOT_SOULMASS_TAG)
-                || entity.getTags().contains(DayStalkerTweaks.NO_LOOT_WARMTH_TAG);
+                || entity.getTags().contains(DayStalkerTweaks.NO_LOOT_WARMTH_TAG)
+                || entity.getTags().contains(ChaosMonarchTweaks.NO_LOOT_SUMMON_TAG);
     }
 
     @Unique

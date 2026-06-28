@@ -1,6 +1,7 @@
 package com.starfantasy.soulsfirecontrol.event;
 
 import com.starfantasy.soulsfirecontrol.StarFantasySoulsFireControl;
+import com.starfantasy.soulsfirecontrol.combat.guard.AccursedLordGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.ChaosMonarchGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.DayStalkerGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.GuardBreakTracker;
@@ -8,6 +9,7 @@ import com.starfantasy.soulsfirecontrol.combat.guard.NightShadeGuardBreakTracker
 import com.starfantasy.soulsfirecontrol.combat.guard.NightProwlerGuardBreakTracker;
 import com.starfantasy.soulsfirecontrol.combat.guard.SlashBladeGuardCompat;
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
+import com.starfantasy.soulsfirecontrol.util.AccursedLordTweaks;
 import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,6 +20,7 @@ import net.soulsweaponry.entity.mobs.DraugrBoss;
 import net.soulsweaponry.entity.mobs.NightShade;
 import net.soulsweaponry.entity.mobs.NightProwler;
 import net.soulsweaponry.entity.mobs.ChaosMonarch;
+import net.soulsweaponry.entity.mobs.AccursedLordBoss;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -56,6 +59,11 @@ public final class DraugrGuardBreakEvents {
         if (monarch != null && ChaosMonarchTweaks.rewardsGuardBreak(monarch)
                 && SlashBladeGuardCompat.isUsableMainhandSlashBlade(player)) {
             ChaosMonarchGuardBreakTracker.recordPerfectGuard(monarch, player);
+        }
+        AccursedLordBoss accursedLord = findAccursedLordDirectAttacker(event.getSource());
+        if (accursedLord != null && AccursedLordTweaks.rewardsGuardBreak(accursedLord)
+                && SlashBladeGuardCompat.isUsableMainhandSlashBlade(player)) {
+            AccursedLordGuardBreakTracker.recordPerfectGuard(accursedLord, player);
         }
     }
 
@@ -129,6 +137,17 @@ public final class DraugrGuardBreakEvents {
             return boss;
         }
         if (direct == null && source.getEntity() instanceof ChaosMonarch boss) {
+            return boss;
+        }
+        return null;
+    }
+
+    private static AccursedLordBoss findAccursedLordDirectAttacker(DamageSource source) {
+        Entity direct = source.getDirectEntity();
+        if (direct instanceof AccursedLordBoss boss) {
+            return boss;
+        }
+        if (direct == null && source.getEntity() instanceof AccursedLordBoss boss) {
             return boss;
         }
         return null;

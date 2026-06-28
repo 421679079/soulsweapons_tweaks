@@ -16,6 +16,7 @@
 package com.starfantasy.soulsfirecontrol.mixin;
 
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
+import com.starfantasy.soulsfirecontrol.util.AccursedLordTweaks;
 import com.starfantasy.soulsfirecontrol.util.SoulsFireControlHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -43,11 +44,13 @@ public abstract class SmallFireballMixin {
     private void starfantasy$explodeSummonedWarmthFireballOnEntity(EntityHitResult hitResult, CallbackInfo ci) {
         DayStalkerTweaks.detonateWarmthFireball((SmallFireball) (Object) this, hitResult.getLocation());
         DayStalkerTweaks.detonateBlazeBarrageFireball((SmallFireball) (Object) this, hitResult.getLocation());
+        AccursedLordTweaks.detonateAccursedProjectile((SmallFireball) (Object) this, hitResult.getLocation());
     }
 
     @Inject(method = "onHitBlock", at = @At("TAIL"))
     private void starfantasy$explodeSummonedWarmthFireballOnBlock(BlockHitResult hitResult, CallbackInfo ci) {
         DayStalkerTweaks.detonateWarmthFireball((SmallFireball) (Object) this, hitResult.getLocation());
         DayStalkerTweaks.detonateBlazeBarrageFireball((SmallFireball) (Object) this, hitResult.getLocation());
+        AccursedLordTweaks.detonateAccursedProjectile((SmallFireball) (Object) this, hitResult.getLocation());
     }
 }

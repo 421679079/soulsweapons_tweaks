@@ -5,6 +5,8 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "soulsweapons_tweaks.refmap.json",
   "mixins": [
+    "AccursedLordBossMixin",
+    "AccursedLordGoalMixin",
     "BossEntityAccessor",
     "BlackflameSnakeEntityMixin",
     "ChaosMonarchGoalMixin",
