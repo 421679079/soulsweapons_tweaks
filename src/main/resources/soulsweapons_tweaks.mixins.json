@@ -1,0 +1,33 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.starfantasy.soulsfirecontrol.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "soulsweapons_tweaks.refmap.json",
+  "mixins": [
+    "BossEntityAccessor",
+    "BlackflameSnakeEntityMixin",
+    "ChaosMonarchGoalMixin",
+    "ChaosSkullMixin",
+    "DamagingWarmupEntityEventsMixin",
+    "DayStalkerGoalMixin",
+    "DayStalkerMixin",
+    "DraugrBossGoalMixin",
+    "DraugrBossMixin",
+    "GrowingFireballMixin",
+    "NightShadeGoalMixin",
+    "NightShadeMixin",
+    "NightProwlerGoalMixin",
+    "NightProwlerMixin",
+    "NoLootSoulmassMixin",
+    "ProjectileMixin",
+    "ShadowOrbMixin",
+    "SoulmassGoalMixin",
+    "SmallFireballMixin",
+    "WarmthEntityMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

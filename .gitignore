@@ -1,0 +1,54 @@
+# Gradle and build output
+.gradle/
+build/
+out/
+bin/
+run/
+
+# IDE files
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+
+# Logs and crash reports
+logs/
+crash-reports/
+*.log
+hs_err_pid*
+replay_pid*
+
+# Local dependency jars.
+# Keep the source repository clean; place these jars locally when building.
+libs/*.jar
+
+# Local workspace helpers and private handoff notes
+build-local.bat
+AGENTS.md
+HANDOFF*.md
+*_HANDOFF*.md
+*_REWORK*.md
+*_PLAN*.md
+GUARD_FEEDBACK_AUDIT.md
+
+# Backups and archives
+backups/
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# Minecraft local test directories
+/.minecraft/
+/mods/
+/config/
+/world/
+/worlds/
+/saves/
+
+# OS files
+Thumbs.db
+.DS_Store

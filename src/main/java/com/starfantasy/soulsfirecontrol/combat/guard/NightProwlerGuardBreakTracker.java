@@ -1,0 +1,265 @@
+package com.starfantasy.soulsfirecontrol.combat.guard;
+
+import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
+import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.phys.Vec3;
+import net.soulsweaponry.entity.mobs.NightProwler;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+
+public final class NightProwlerGuardBreakTracker {
+    private static final int STUN_TICKS = 100;
+    private static final int STANCE_CHANGE_COOLDOWN_TICKS = 10;
+    private static final Map<UUID, GuardBreakState> STATES = new HashMap<>();
+
+    private NightProwlerGuardBreakTracker() {
+    }
+
+    public static void recordPerfectGuard(NightProwler boss, ServerPlayer player) {
+        if (boss.level().isClientSide() || boss.isDeadOrDying()
+                || !NightProwlerTweaks.rewardsGuardBreak(boss)) {
+            return;
+        }
+        int required = requiredGuards();
+        GuardBreakState state = STATES.computeIfAbsent(boss.getUUID(), uuid -> new GuardBreakState());
+        if (state.stunTicks > 0) {
+            return;
+        }
+        if (isOnCooldown(boss.tickCount, state.lastGuardTick)) {
+            return;
+        }
+        state.lastGuardTick = boss.tickCount;
+        state.guardCount = Math.min(required, state.guardCount + 1);
+        if (state.guardCount >= required) {
+            GuardBreakHudSync.syncTriggered(boss, required);
+            startStun(boss, state, required, player);
+        } else {
+            GuardBreakHudSync.syncGuarded(boss, state.guardCount, required);
+        }
+    }
+
+    public static void recordPlayerHit(NightProwler boss) {
+        if (boss.level().isClientSide() || boss.isDeadOrDying()
+                || !NightProwlerTweaks.rewardsGuardBreak(boss)) {
+            return;
+        }
+        int required = requiredGuards();
+        GuardBreakState state = STATES.get(boss.getUUID());
+        if (state == null || state.stunTicks > 0 || state.guardCount <= 0) {
+            return;
+        }
+        if (isOnCooldown(boss.tickCount, state.lastHitTick)) {
+            return;
+        }
+        state.lastHitTick = boss.tickCount;
+        --state.guardCount;
+        GuardBreakHudSync.syncGuarded(boss, state.guardCount, required);
+    }
+
+    public static void tick(NightProwler boss) {
+        if (boss.level().isClientSide()) {
+            return;
+        }
+        int required = requiredGuards();
+        GuardBreakState state = STATES.get(boss.getUUID());
+        if (boss.isDeadOrDying()) {
+            STATES.remove(boss.getUUID());
+            GuardBreakHudSync.clearOrReset(boss, required);
+            return;
+        }
+        if (!boss.isPhaseTwo()) {
+            if (state != null) {
+                STATES.remove(boss.getUUID());
+            }
+            if (boss.tickCount % 20 == 0) {
+                GuardBreakHudSync.hide(boss, required);
+            }
+            return;
+        }
+        if (state == null) {
+            if (boss.tickCount % 10 == 0) {
+                GuardBreakHudSync.syncIdle(boss, required);
+            }
+            return;
+        }
+        if (state.stunTicks > 0) {
+            pinStunnedBoss(boss, state.knockbackTicks <= 0);
+            if (state.knockbackTicks > 0) {
+                --state.knockbackTicks;
+            }
+            spawnStunParticles(boss);
+            --state.stunTicks;
+            if (state.stunTicks <= 0) {
+                clearStun(boss, state, required);
+                return;
+            }
+        }
+        if (boss.tickCount % 20 == 0) {
+            int hudGuardCount = state.stunTicks > 0 ? required : state.guardCount;
+            GuardBreakHudSync.refresh(boss, hudGuardCount, required);
+        }
+        pruneEmptyStates();
+    }
+
+    public static boolean isStunned(NightProwler boss) {
+        GuardBreakState state = STATES.get(boss.getUUID());
+        return state != null && state.stunTicks > 0;
+    }
+
+    public static void clear(NightProwler boss) {
+        STATES.remove(boss.getUUID());
+        GuardBreakHudSync.hide(boss, requiredGuards());
+    }
+
+    private static int requiredGuards() {
+        return Math.max(1, ChaosMonarchConfig.getNightProwlerGuardBreakRequiredGuards());
+    }
+
+    private static boolean isOnCooldown(int currentTick, int lastTick) {
+        return lastTick != Integer.MIN_VALUE && currentTick - lastTick < STANCE_CHANGE_COOLDOWN_TICKS;
+    }
+
+    private static void startStun(NightProwler boss, GuardBreakState state, int required, ServerPlayer player) {
+        state.guardCount = required;
+        state.stunTicks = STUN_TICKS;
+        state.knockbackTicks = 4;
+        boss.setAttackAnimation(NightProwler.Attacks.IDLE);
+        boss.setFlying(false);
+        boss.setChaseTarget(false);
+        boss.setWaitAnimation(false);
+        boss.setRemainingAniTicks(0);
+        boss.setParticleState(0);
+        pinStunnedBoss(boss, true);
+        knockBossAwayFromPlayer(boss, player);
+        playStunBurst(boss);
+    }
+
+    private static void clearStun(NightProwler boss, GuardBreakState state, int required) {
+        state.guardCount = 0;
+        state.stunTicks = 0;
+        boss.setChaseTarget(true);
+        boss.setFlying(false);
+        GuardBreakHudSync.syncIdle(boss, required);
+    }
+
+    private static void pinStunnedBoss(NightProwler boss, boolean stopHorizontalMotion) {
+        boss.getNavigation().stop();
+        boss.setAttackAnimation(NightProwler.Attacks.IDLE);
+        boss.setFlying(false);
+        boss.setChaseTarget(false);
+        boss.setRemainingAniTicks(0);
+        boss.setWaitAnimation(false);
+        boss.setParticleState(0);
+        boss.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 5, 20, false, true));
+        if (stopHorizontalMotion) {
+            boss.setDeltaMovement(0.0D, boss.getDeltaMovement().y, 0.0D);
+        }
+        boss.hurtMarked = true;
+    }
+
+    private static void knockBossAwayFromPlayer(NightProwler boss, ServerPlayer player) {
+        Vec3 direction = boss.position().subtract(player.position());
+        direction = new Vec3(direction.x, 0.0D, direction.z);
+        if (direction.lengthSqr() < 1.0E-4D) {
+            direction = player.getLookAngle().multiply(-1.0D, 0.0D, -1.0D);
+        }
+        if (direction.lengthSqr() < 1.0E-4D) {
+            direction = new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        boss.setDeltaMovement(direction.normalize().scale(0.55D).add(0.0D, 0.12D, 0.0D));
+        boss.hurtMarked = true;
+    }
+
+    private static void spawnStunParticles(NightProwler boss) {
+        if (!(boss.level() instanceof ServerLevel level)) {
+            return;
+        }
+        double centerY = boss.getY() + boss.getBbHeight() + 0.35D;
+        double radius = 1.15D;
+        double baseAngle = boss.tickCount * 0.45D;
+        for (int i = 0; i < 8; ++i) {
+            double angle = baseAngle + i * (Math.PI / 4.0D);
+            double x = boss.getX() + Math.cos(angle) * radius;
+            double z = boss.getZ() + Math.sin(angle) * radius;
+            level.sendParticles(ParticleTypes.END_ROD,
+                    x, centerY, z,
+                    1,
+                    0.02D, 0.05D, 0.02D,
+                    0.025D);
+            level.sendParticles(ParticleTypes.ENCHANTED_HIT,
+                    x, centerY - 0.15D, z,
+                    1,
+                    0.05D, 0.05D, 0.05D,
+                    0.04D);
+        }
+        if (boss.tickCount % 4 == 0) {
+            level.sendParticles(ParticleTypes.CRIT,
+                    boss.getX(), centerY, boss.getZ(),
+                    10,
+                    0.9D, 0.25D, 0.9D,
+                    0.12D);
+        }
+    }
+
+    private static void playStunBurst(NightProwler boss) {
+        if (!(boss.level() instanceof ServerLevel level)) {
+            return;
+        }
+        double x = boss.getX();
+        double y = boss.getY() + boss.getBbHeight() * 0.75D;
+        double z = boss.getZ();
+        level.playSound(null, x, y, z,
+                SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.HOSTILE,
+                1.4F,
+                0.6F);
+        level.playSound(null, x, y, z,
+                SoundEvents.GENERIC_EXPLODE,
+                SoundSource.HOSTILE,
+                1.1F,
+                0.8F);
+        level.sendParticles(ParticleTypes.FLASH, x, y, z,
+                1, 0.0D, 0.0D, 0.0D, 0.0D);
+        for (int i = 0; i < 6; ++i) {
+            double angle = (Math.PI * 2.0D / 6.0D) * i;
+            double px = x + Math.cos(angle) * 0.85D;
+            double pz = z + Math.sin(angle) * 0.85D;
+            level.sendParticles(ParticleTypes.EXPLOSION,
+                    px, y + 0.15D, pz,
+                    1, 0.0D, 0.0D, 0.0D, 0.0D);
+            level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                    px, y + 0.15D, pz,
+                    8, 0.25D, 0.18D, 0.25D, 0.05D);
+        }
+        level.sendParticles(ParticleTypes.END_ROD, x, y + 0.45D, z,
+                64, 1.2D, 0.8D, 1.2D, 0.2D);
+    }
+
+    private static void pruneEmptyStates() {
+        Iterator<Map.Entry<UUID, GuardBreakState>> iterator = STATES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            GuardBreakState state = iterator.next().getValue();
+            if (state.stunTicks <= 0 && state.guardCount <= 0) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private static final class GuardBreakState {
+        private int guardCount;
+        private int stunTicks;
+        private int knockbackTicks;
+        private int lastGuardTick = Integer.MIN_VALUE;
+        private int lastHitTick = Integer.MIN_VALUE;
+    }
+}
