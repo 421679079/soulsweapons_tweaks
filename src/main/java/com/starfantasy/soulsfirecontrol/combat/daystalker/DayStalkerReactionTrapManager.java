@@ -3,7 +3,6 @@ package com.starfantasy.soulsfirecontrol.combat.daystalker;
 import com.starfantasy.soulsfirecontrol.StarFantasySoulsFireControl;
 import com.starfantasy.soulsfirecontrol.combat.effect.ConfiguredMobEffect;
 import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
-import com.starfantasy.soulsfirecontrol.mixin.BossEntityAccessor;
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphVfx;
@@ -11,9 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -66,8 +63,9 @@ public final class DayStalkerReactionTrapManager {
         if (boss == null || boss.level().isClientSide() || !boss.isAlive() || !boss.isPhaseTwo()) {
             return;
         }
-        for (ServerPlayer player : collectPlayers(boss, ChaosMonarchConfig.getTwinBossMeteorTargetRadius())) {
-            spawnPatternAtPlayer(boss, player);
+        LivingEntity target = boss.getTarget();
+        if (!shouldSkipTarget(boss, target)) {
+            spawnPatternAtTarget(boss, target);
         }
     }
 
@@ -125,10 +123,10 @@ public final class DayStalkerReactionTrapManager {
         }
     }
 
-    private static void spawnPatternAtPlayer(DayStalker boss, ServerPlayer player) {
-        Vec3 base = groundCenterAt(boss.level(), player.getX(),
-                Math.max(player.getY(), boss.getY()) + 8.0D,
-                player.getZ(), Mth.floor(player.getX()), Mth.floor(player.getZ()));
+    private static void spawnPatternAtTarget(DayStalker boss, LivingEntity target) {
+        Vec3 base = groundCenterAt(boss.level(), target.getX(),
+                Math.max(target.getY(), boss.getY()) + 8.0D,
+                target.getZ(), Mth.floor(target.getX()), Mth.floor(target.getZ()));
         Set<BlockPos> spawned = new LinkedHashSet<>();
         spawnTrapOnce(boss, base, spawned);
         for (int distance : CROSS_DISTANCES) {
@@ -245,27 +243,6 @@ public final class DayStalkerReactionTrapManager {
             return true;
         }
         return target instanceof Player player && (player.isCreative() || player.isSpectator());
-    }
-
-    private static Set<ServerPlayer> collectPlayers(DayStalker boss, double radius) {
-        Set<ServerPlayer> players = new LinkedHashSet<>();
-        if (!(boss.level() instanceof ServerLevel level)) {
-            return players;
-        }
-        try {
-            ServerBossEvent bossBar = ((BossEntityAccessor) boss).starfantasy$getBossBar();
-            players.addAll(bossBar.getPlayers());
-        } catch (ClassCastException ignored) {
-            // Non-standard boss wrappers may not expose the Souls boss bar.
-        }
-        AABB searchBox = boss.getBoundingBox().inflate(radius);
-        players.addAll(level.getEntitiesOfClass(ServerPlayer.class, searchBox));
-        players.removeIf(player -> player.level() != level || isIgnoredPlayer(player));
-        return players;
-    }
-
-    private static boolean isIgnoredPlayer(Player player) {
-        return player.isSpectator() || player.isCreative() || !player.isAlive();
     }
 
     private static boolean hasManagedTrapTag(DamageSource source) {

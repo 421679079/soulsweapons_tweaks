@@ -17,6 +17,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -34,6 +35,10 @@ public final class TwinBossCombatEffects {
     private static final String NIGHT_METEOR_COOLDOWN_KEY = "starfantasy_night_prowler_meteor_cooldown";
     private static final int DEBUFF_REFRESH_INTERVAL_TICKS = 20;
     private static final int DEBUFF_REFRESH_THRESHOLD_TICKS = 60;
+    private static final int METEOR_PHASE_TWO_INTERVAL_TICKS = 15;
+    private static final int METEOR_LOW_HEALTH_INTERVAL_TICKS = 5;
+    private static final double METEOR_BOSS_OFFSET_MIN = 12.0D;
+    private static final double METEOR_BOSS_OFFSET_MAX = 18.0D;
     private static final double METEOR_EXPLOSION_RADIUS = 2.0D;
 
     private TwinBossCombatEffects() {
@@ -99,31 +104,34 @@ public final class TwinBossCombatEffects {
             return;
         }
 
-        Set<ServerPlayer> targets = collectPlayers(boss, ChaosMonarchConfig.getTwinBossMeteorTargetRadius());
-        if (targets.isEmpty()) {
+        if (!hasMeteorAudience(boss)) {
             data.putInt(cooldownKey, DEBUFF_REFRESH_INTERVAL_TICKS);
             return;
         }
-        for (ServerPlayer target : targets) {
-            spawnMeteor(boss, target, meteorType);
-        }
+        spawnMeteor(boss, meteorType);
         data.putInt(cooldownKey, nextMeteorCooldown(boss));
     }
 
-    private static int nextMeteorCooldown(LivingEntity boss) {
-        boolean lowHealth = boss.getHealth() <= boss.getMaxHealth() * 0.5F;
-        return Math.max(1, lowHealth
-                ? ChaosMonarchConfig.getTwinBossMeteorLowHealthIntervalTicks()
-                : ChaosMonarchConfig.getTwinBossMeteorIntervalTicks());
+    private static boolean hasMeteorAudience(LivingEntity boss) {
+        LivingEntity target = boss instanceof Mob mob ? mob.getTarget() : null;
+        if (target instanceof Player player && !isIgnoredPlayer(player)) {
+            return true;
+        }
+        return !collectPlayers(boss, ChaosMonarchConfig.getTwinBossMeteorTargetRadius()).isEmpty();
     }
 
-    private static void spawnMeteor(LivingEntity boss, ServerPlayer target,
-                                    EntityType<TwinMeteorEntity> meteorType) {
+    private static int nextMeteorCooldown(LivingEntity boss) {
+        return boss.getHealth() <= boss.getMaxHealth() * 0.5F
+                ? METEOR_LOW_HEALTH_INTERVAL_TICKS
+                : METEOR_PHASE_TWO_INTERVAL_TICKS;
+    }
+
+    private static void spawnMeteor(LivingEntity boss, EntityType<TwinMeteorEntity> meteorType) {
         if (!(boss.level() instanceof ServerLevel level)) {
             return;
         }
         int warningTicks = Math.max(1, ChaosMonarchConfig.getTwinBossMeteorWarningTicks());
-        Vec3 impact = randomImpactNearTarget(boss, target);
+        Vec3 impact = randomImpactAroundBoss(boss);
         Vec3 start = impact.add(0.0D, ChaosMonarchConfig.getTwinBossMeteorSpawnYOffset(), 0.0D);
         TwinMeteorEntity meteor = meteorType.create(level);
         if (meteor == null) {
@@ -136,23 +144,16 @@ public final class TwinBossCombatEffects {
                 warningTicks, METEOR_EXPLOSION_RADIUS);
     }
 
-    private static Vec3 randomImpactNearTarget(LivingEntity boss, ServerPlayer target) {
+    private static Vec3 randomImpactAroundBoss(LivingEntity boss) {
         RandomSource random = boss.getRandom();
-        boolean lowHealth = boss.getHealth() <= boss.getMaxHealth() * 0.5F;
-        int rawMin = lowHealth
-                ? ChaosMonarchConfig.getTwinBossMeteorLowHealthRandomOffsetMin()
-                : ChaosMonarchConfig.getTwinBossMeteorRandomOffsetMin();
-        int rawMax = lowHealth
-                ? ChaosMonarchConfig.getTwinBossMeteorLowHealthRandomOffsetMax()
-                : ChaosMonarchConfig.getTwinBossMeteorRandomOffsetMax();
-        double min = Math.min(rawMin, rawMax);
-        double max = Math.max(rawMin, rawMax);
+        double min = Math.min(METEOR_BOSS_OFFSET_MIN, METEOR_BOSS_OFFSET_MAX);
+        double max = Math.max(METEOR_BOSS_OFFSET_MIN, METEOR_BOSS_OFFSET_MAX);
         double distance = min + random.nextDouble() * Math.max(0.0D, max - min);
         double angle = random.nextDouble() * Math.PI * 2.0D;
-        double x = target.getX() + Math.cos(angle) * distance;
-        double z = target.getZ() + Math.sin(angle) * distance;
+        double x = boss.getX() + Math.cos(angle) * distance;
+        double z = boss.getZ() + Math.sin(angle) * distance;
         return groundCenterAt(boss.level(), x,
-                Math.max(target.getY(), boss.getY()) + ChaosMonarchConfig.getTwinBossMeteorSpawnYOffset(),
+                boss.getY() + ChaosMonarchConfig.getTwinBossMeteorSpawnYOffset(),
                 z, Mth.floor(x), Mth.floor(z));
     }
 

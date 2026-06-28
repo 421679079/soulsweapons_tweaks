@@ -4,15 +4,12 @@ import com.starfantasy.soulsfirecontrol.StarFantasySoulsFireControl;
 import com.starfantasy.soulsfirecontrol.combat.effect.ConfiguredMobEffect;
 import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
 import com.starfantasy.soulsfirecontrol.entity.NightProwlerLightningAoeEntity;
-import com.starfantasy.soulsfirecontrol.mixin.BossEntityAccessor;
 import com.starfantasy.soulsfirecontrol.util.DayStalkerTweaks;
 import com.starfantasy.soulsfirecontrol.util.NightProwlerTweaks;
 import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphVfx;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -34,9 +31,7 @@ import net.soulsweaponry.entity.mobs.NightProwler;
 import net.soulsweaponry.entity.mobs.WarmthEntity;
 
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = StarFantasySoulsFireControl.MOD_ID)
@@ -57,8 +52,9 @@ public final class NightProwlerReactionLightningManager {
         if (!canTrigger(boss)) {
             return;
         }
-        for (ServerPlayer player : collectPlayers(boss, ChaosMonarchConfig.getTwinBossMeteorTargetRadius())) {
-            spawnWarningAtPlayer(boss, player);
+        LivingEntity target = boss.getTarget();
+        if (!shouldSkipTarget(boss, target)) {
+            spawnWarningAtTarget(boss, target);
         }
     }
 
@@ -117,11 +113,11 @@ public final class NightProwlerReactionLightningManager {
                 && boss.isPhaseTwo();
     }
 
-    private static void spawnWarningAtPlayer(NightProwler boss, ServerPlayer player) {
+    private static void spawnWarningAtTarget(NightProwler boss, LivingEntity target) {
         double radius = radiusFor(boss);
-        Vec3 center = groundCenterAt(boss.level(), player.getX(),
-                Math.max(player.getY(), boss.getY()) + 8.0D,
-                player.getZ(), Mth.floor(player.getX()), Mth.floor(player.getZ()));
+        Vec3 center = groundCenterAt(boss.level(), target.getX(),
+                Math.max(target.getY(), boss.getY()) + 8.0D,
+                target.getZ(), Mth.floor(target.getX()), Mth.floor(target.getZ()));
         TelegraphVfx.redGroundWarningCircle(boss, center.add(0.0D, 0.06D, 0.0D),
                 WARNING_TICKS, radius);
         PENDING_AOES.add(new PendingAoe(boss.level().dimension(), boss.getUUID(), center,
@@ -187,27 +183,6 @@ public final class NightProwlerReactionLightningManager {
             return true;
         }
         return target instanceof Player player && (player.isCreative() || player.isSpectator());
-    }
-
-    private static Set<ServerPlayer> collectPlayers(NightProwler boss, double radius) {
-        Set<ServerPlayer> players = new LinkedHashSet<>();
-        if (!(boss.level() instanceof ServerLevel level)) {
-            return players;
-        }
-        try {
-            ServerBossEvent bossBar = ((BossEntityAccessor) boss).starfantasy$getBossBar();
-            players.addAll(bossBar.getPlayers());
-        } catch (ClassCastException ignored) {
-            // Some non-standard boss wrappers may not expose the Souls boss bar.
-        }
-        AABB searchBox = boss.getBoundingBox().inflate(radius);
-        players.addAll(level.getEntitiesOfClass(ServerPlayer.class, searchBox));
-        players.removeIf(player -> player.level() != level || isIgnoredPlayer(player));
-        return players;
-    }
-
-    private static boolean isIgnoredPlayer(Player player) {
-        return player.isSpectator() || player.isCreative() || !player.isAlive();
     }
 
     private static Vec3 groundCenterAt(Level level, double preciseX, double searchY, double preciseZ,

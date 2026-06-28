@@ -53,15 +53,9 @@ public final class ChaosMonarchConfig {
     private static final ForgeConfigSpec.ConfigValue<String> DAY_STALKER_REACTION_TRAP_ENTITY;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DAY_STALKER_REACTION_TRAP_HIT_EFFECTS;
     private static final ForgeConfigSpec.IntValue TWIN_BOSS_NEARBY_PLAYER_DEBUFF_RADIUS;
-    private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_INTERVAL_TICKS;
-    private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_LOW_HEALTH_INTERVAL_TICKS;
     private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_WARNING_TICKS;
     private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_TARGET_RADIUS;
     private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_SPAWN_Y_OFFSET;
-    private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_RANDOM_OFFSET_MIN;
-    private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_RANDOM_OFFSET_MAX;
-    private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_LOW_HEALTH_RANDOM_OFFSET_MIN;
-    private static final ForgeConfigSpec.IntValue TWIN_BOSS_METEOR_LOW_HEALTH_RANDOM_OFFSET_MAX;
 
     private ChaosMonarchConfig() {
     }
@@ -174,14 +168,6 @@ public final class ChaosMonarchConfig {
         return TWIN_BOSS_NEARBY_PLAYER_DEBUFF_RADIUS.get();
     }
 
-    public static int getTwinBossMeteorIntervalTicks() {
-        return TWIN_BOSS_METEOR_INTERVAL_TICKS.get();
-    }
-
-    public static int getTwinBossMeteorLowHealthIntervalTicks() {
-        return TWIN_BOSS_METEOR_LOW_HEALTH_INTERVAL_TICKS.get();
-    }
-
     public static int getTwinBossMeteorWarningTicks() {
         return TWIN_BOSS_METEOR_WARNING_TICKS.get();
     }
@@ -192,22 +178,6 @@ public final class ChaosMonarchConfig {
 
     public static int getTwinBossMeteorSpawnYOffset() {
         return TWIN_BOSS_METEOR_SPAWN_Y_OFFSET.get();
-    }
-
-    public static int getTwinBossMeteorRandomOffsetMin() {
-        return TWIN_BOSS_METEOR_RANDOM_OFFSET_MIN.get();
-    }
-
-    public static int getTwinBossMeteorRandomOffsetMax() {
-        return TWIN_BOSS_METEOR_RANDOM_OFFSET_MAX.get();
-    }
-
-    public static int getTwinBossMeteorLowHealthRandomOffsetMin() {
-        return TWIN_BOSS_METEOR_LOW_HEALTH_RANDOM_OFFSET_MIN.get();
-    }
-
-    public static int getTwinBossMeteorLowHealthRandomOffsetMax() {
-        return TWIN_BOSS_METEOR_LOW_HEALTH_RANDOM_OFFSET_MAX.get();
     }
 
     private static boolean isValidString(Object value) {
@@ -238,15 +208,9 @@ public final class ChaosMonarchConfig {
         builder.pop();
         builder.push("chaos_twins");
         TWIN_BOSS_NEARBY_PLAYER_DEBUFF_RADIUS = builder.comment("Radius for applying combat debuffs to players fighting Day Stalker or Night Prowler.").defineInRange("nearby_player_debuff_radius", 64, 1, 256);
-        TWIN_BOSS_METEOR_INTERVAL_TICKS = builder.comment("Meteor ambience interval while Day Stalker or Night Prowler is in phase 2.").defineInRange("meteor_interval_ticks", 20, 1, 72000);
-        TWIN_BOSS_METEOR_LOW_HEALTH_INTERVAL_TICKS = builder.comment("Meteor ambience interval below 50% health.").defineInRange("meteor_low_health_interval_ticks", 5, 1, 72000);
         TWIN_BOSS_METEOR_WARNING_TICKS = builder.comment("Red ground warning duration before ambience meteors land.").defineInRange("meteor_warning_ticks", 40, 1, 200);
-        TWIN_BOSS_METEOR_TARGET_RADIUS = builder.comment("Radius for finding players that can receive ambience meteors.").defineInRange("meteor_target_radius", 64, 1, 256);
+        TWIN_BOSS_METEOR_TARGET_RADIUS = builder.comment("Radius for keeping ambience meteors active while players are fighting a twin boss.").defineInRange("meteor_target_radius", 64, 1, 256);
         TWIN_BOSS_METEOR_SPAWN_Y_OFFSET = builder.comment("Vertical offset above the impact point where ambience meteors spawn.").defineInRange("meteor_spawn_y_offset", 30, 4, 128);
-        TWIN_BOSS_METEOR_RANDOM_OFFSET_MIN = builder.comment("Minimum random horizontal offset from the target player for ambience meteors.").defineInRange("meteor_random_offset_min", 8, 0, 128);
-        TWIN_BOSS_METEOR_RANDOM_OFFSET_MAX = builder.comment("Maximum random horizontal offset from the target player for ambience meteors.").defineInRange("meteor_random_offset_max", 12, 0, 128);
-        TWIN_BOSS_METEOR_LOW_HEALTH_RANDOM_OFFSET_MIN = builder.comment("Minimum random horizontal offset below 50% health.").defineInRange("meteor_low_health_random_offset_min", 12, 0, 128);
-        TWIN_BOSS_METEOR_LOW_HEALTH_RANDOM_OFFSET_MAX = builder.comment("Maximum random horizontal offset below 50% health.").defineInRange("meteor_low_health_random_offset_max", 18, 0, 128);
         builder.pop();
         builder.push("night_prowler");
         NIGHT_PROWLER_GUARD_BREAK_REQUIRED_GUARDS = builder.comment("Perfect guards required to stun Night Prowler.").defineInRange("guard_break_required_guards", 12, 1, 100);

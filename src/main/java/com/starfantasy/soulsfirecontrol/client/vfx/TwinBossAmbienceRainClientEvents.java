@@ -121,7 +121,7 @@ public final class TwinBossAmbienceRainClientEvents {
         float age = (float) level.getGameTime() + partialTick;
         if (dayIntensity > 0.001F) {
             renderRainLayer(buffer, matrix, cameraPos, cameraX, cameraZ, yMin, yMax, age, dayIntensity,
-                    false, 1.0F, 0.72F, 0.08F);
+                    false, 1.0F, 1.0F, 0.12F);
         }
         if (nightIntensity > 0.001F) {
             renderRainLayer(buffer, matrix, cameraPos, cameraX, cameraZ, yMin, yMax, age, nightIntensity,

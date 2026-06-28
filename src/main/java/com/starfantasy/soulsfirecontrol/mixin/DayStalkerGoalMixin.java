@@ -357,14 +357,17 @@ public abstract class DayStalkerGoalMixin {
 
     @Inject(method = "flamesEdge", at = @At("HEAD"))
     private void starfantasy$warnFlamesEdge(CallbackInfo ci) {
-        this.starfantasy$tickFlamesEdgeAftershocks();
+        if (this.boss.isPhaseTwo()) {
+            this.starfantasy$tickFlamesEdgeAftershocks();
+        } else {
+            this.starfantasy$flamesEdgeAftershocks.clear();
+        }
         DayStalkerTweaks.warnFlamesEdge(this.boss, this.attackStatus);
     }
 
     @Inject(method = "flamesEdge", at = @At("TAIL"))
     private void starfantasy$scheduleFlamesEdgeAftershocks(CallbackInfo ci) {
-        int hitFrame = this.boss.isPhaseTwo() ? 41 : 22;
-        if (this.attackStatus == hitFrame) {
+        if (this.boss.isPhaseTwo() && this.attackStatus == 41) {
             DayStalkerReactionTrapManager.triggerDelayed(this.boss, 40);
             this.starfantasy$scheduleFlamesEdgeAftershocks();
         }
@@ -388,6 +391,11 @@ public abstract class DayStalkerGoalMixin {
     @Inject(method = "warmth", at = @At("HEAD"))
     private void starfantasy$warnWarmth(CallbackInfo ci) {
         DayStalkerTweaks.warnWarmth(this.boss, this.attackStatus);
+    }
+
+    @ModifyConstant(method = "warmth", constant = @Constant(intValue = 4, ordinal = 1), remap = false)
+    private int starfantasy$reduceWarmthSummonYOffsetRange(int original) {
+        return 2;
     }
 
     @Redirect(method = "warmth",
