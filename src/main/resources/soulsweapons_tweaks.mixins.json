@@ -23,6 +23,8 @@
     "NightProwlerMixin",
     "NightSkullMixin",
     "NoLootSoulmassMixin",
+    "ReturningKnightGoalMixin",
+    "ReturningKnightMixin",
     "ShadowOrbMixin",
     "SoulmassGoalMixin",
     "SmallFireballMixin",
