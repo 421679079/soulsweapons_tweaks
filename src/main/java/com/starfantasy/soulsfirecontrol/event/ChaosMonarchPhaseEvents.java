@@ -34,6 +34,7 @@ public final class ChaosMonarchPhaseEvents {
         if (!(event.getEntity() instanceof ChaosMonarch boss)) {
             return;
         }
+        ChaosMonarchTweaks.tryRecordMeleeClashHit(boss, event.getSource());
         if (ChaosMonarchPhaseManager.bypassesPhaseLock(event.getSource())) {
             return;
         }

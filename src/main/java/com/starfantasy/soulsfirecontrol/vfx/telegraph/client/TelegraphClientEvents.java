@@ -18,5 +18,6 @@ public final class TelegraphClientEvents {
         event.registerSpriteSet(TelegraphParticleRegistry.ROAR_WAVE.get(), RoarWaveParticle.Provider::new);
         event.registerSpriteSet(TelegraphParticleRegistry.SWORD_EXPLOSION.get(), SwordExplosionParticle.Provider::new);
         event.registerSpriteSet(TelegraphParticleRegistry.GROUND_WARNING_RECTANGLE.get(), GroundWarningRectangleParticle.Provider::new);
+        event.registerSpriteSet(TelegraphParticleRegistry.GUARD_CLASH.get(), GuardClashParticle.Provider::new);
     }
 }

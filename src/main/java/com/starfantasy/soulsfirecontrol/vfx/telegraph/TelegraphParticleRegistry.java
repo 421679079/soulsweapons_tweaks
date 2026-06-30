@@ -24,6 +24,9 @@ public final class TelegraphParticleRegistry {
     public static final RegistryObject<SimpleParticleType> GROUND_WARNING_RECTANGLE =
             PARTICLES.register("ground_warning_rectangle", () -> new SimpleParticleType(true));
 
+    public static final RegistryObject<SimpleParticleType> GUARD_CLASH =
+            PARTICLES.register("guard_clash", () -> new SimpleParticleType(true));
+
     private TelegraphParticleRegistry() {
     }
 

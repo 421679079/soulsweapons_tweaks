@@ -1,14 +1,21 @@
 package com.starfantasy.soulsfirecontrol.util;
 
 import com.starfantasy.soulsfirecontrol.combat.chaosmonarch.ChaosMonarchPhaseManager;
+import com.starfantasy.soulsfirecontrol.combat.guard.SlashBladeGuardCompat;
+import com.starfantasy.soulsfirecontrol.sound.SoulsTweaksSoundRegistry;
+import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphParticleRegistry;
+import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphVfx;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,6 +36,10 @@ import net.soulsweaponry.entity.mobs.ChaosMonarch;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
 
 public final class ChaosMonarchTweaks {
     public static final String NO_LOOT_SUMMON_TAG = "starfantasy_chaos_monarch_no_loot_summon";
@@ -49,6 +60,8 @@ public final class ChaosMonarchTweaks {
 
     private static final double TELEPORT_MELEE_START_DISTANCE = 3.0D;
     private static final double MELEE_CLOSE_RANGE = 4.0D;
+    private static final int MELEE_GOAL_TICK_SCALE = 2;
+    private static final int MELEE_CLASH_WINDOW_TICKS = 10;
     private static final int TELEPORT_ATTACK_ATTEMPTS = 10;
     private static final int TELEPORT_ATTACK_MAX_Y_OFFSET = 47;
     private static final double TELEPORT_FAR_DISTANCE = 24.0D;
@@ -57,6 +70,7 @@ public final class ChaosMonarchTweaks {
     private static final double TELEPORT_RANDOM_MIN_DISTANCE = 12.0D;
     private static final double TELEPORT_RANDOM_MAX_DISTANCE = 24.0D;
     private static final ThreadLocal<ChaosMonarch> SUPPRESSED_GUARD_BREAK_SOURCE = new ThreadLocal<>();
+    private static final Map<UUID, MeleeClashState> MELEE_CLASH_STATES = new HashMap<>();
 
     private ChaosMonarchTweaks() {
     }
@@ -64,7 +78,8 @@ public final class ChaosMonarchTweaks {
     public static boolean rewardsGuardBreak(ChaosMonarch boss) {
         return boss != null
                 && boss.getAttack() == ChaosMonarch.Attack.MELEE
-                && SUPPRESSED_GUARD_BREAK_SOURCE.get() != boss;
+                && SUPPRESSED_GUARD_BREAK_SOURCE.get() != boss
+                && !isCurrentMeleeWarningPolluted(boss);
     }
 
     public static boolean suppressesGuardBreak(ChaosMonarch boss) {
@@ -83,6 +98,105 @@ public final class ChaosMonarchTweaks {
 
     public static float modifiedDamage(float damage) {
         return damage * ConfigConstructor.chaos_monarch_damage_modifier;
+    }
+
+    public static void beginMeleeClashWindow(ChaosMonarch boss, int segmentIndex, int currentFrame,
+                                             int hitFrame, double radius, double height) {
+        if (boss.level().isClientSide()) {
+            return;
+        }
+        MELEE_CLASH_STATES.put(boss.getUUID(),
+                new MeleeClashState(segmentIndex, currentFrame, hitFrame, radius, height));
+    }
+
+    public static void updateMeleeClashFrame(ChaosMonarch boss, int currentFrame) {
+        MeleeClashState state = MELEE_CLASH_STATES.get(boss.getUUID());
+        if (state != null) {
+            state.currentFrame = currentFrame;
+        }
+    }
+
+    public static void clearMeleeClashWindow(ChaosMonarch boss) {
+        MELEE_CLASH_STATES.remove(boss.getUUID());
+    }
+
+    public static boolean tryRecordMeleeClashHit(ChaosMonarch boss, DamageSource source) {
+        if (boss.level().isClientSide() || boss.isDeadOrDying()
+                || boss.getAttack() != ChaosMonarch.Attack.MELEE
+                || !source.is(DamageTypes.PLAYER_ATTACK)
+                || !(source.getEntity() instanceof ServerPlayer player)
+                || SlashBladeGuardCompat.isMainhandSlashBlade(player)) {
+            return false;
+        }
+        MeleeClashState state = MELEE_CLASH_STATES.get(boss.getUUID());
+        if (state == null || state.parryQueued || state.hitConsumed) {
+            return false;
+        }
+        int remainingTicks = state.remainingTicks();
+        if (remainingTicks <= 0) {
+            return false;
+        }
+        if (remainingTicks <= MELEE_CLASH_WINDOW_TICKS && !state.polluted) {
+            state.parryQueued = true;
+            state.parryPlayer = player.getUUID();
+            return true;
+        }
+        if (!state.polluted) {
+            state.polluted = true;
+            TelegraphVfx.redAttackWarningRing(boss, Math.max(1, remainingTicks), state.radius, state.height);
+        }
+        return false;
+    }
+
+    public static boolean consumeMeleeClashParry(ChaosMonarch boss, int segmentIndex) {
+        MeleeClashState state = MELEE_CLASH_STATES.get(boss.getUUID());
+        if (state == null || state.segmentIndex != segmentIndex || state.hitConsumed) {
+            return false;
+        }
+        state.hitConsumed = true;
+        return state.parryQueued && !state.polluted;
+    }
+
+    @Nullable
+    public static ServerPlayer resolveMeleeClashPlayer(ChaosMonarch boss) {
+        MeleeClashState state = MELEE_CLASH_STATES.get(boss.getUUID());
+        if (state == null || state.parryPlayer == null || !(boss.level() instanceof ServerLevel level)) {
+            return null;
+        }
+        Entity entity = level.getEntity(state.parryPlayer);
+        return entity instanceof ServerPlayer player ? player : null;
+    }
+
+    public static void playMeleeClashParryEffects(ChaosMonarch boss, @Nullable LivingEntity opponent) {
+        if (!(boss.level() instanceof ServerLevel level)) {
+            return;
+        }
+        Vec3 bossPos = boss.position();
+        Vec3 otherPos = opponent == null ? bossPos : opponent.position();
+        Vec3 midpoint = bossPos.add(otherPos).scale(0.5D);
+        double x = midpoint.x;
+        double y = boss.getY() + boss.getBbHeight() * 0.62D;
+        double z = midpoint.z;
+        level.playSound(null, x, y, z,
+                SoulsTweaksSoundRegistry.JUST_GUARD_1.get(), SoundSource.PLAYERS,
+                1.5F, 0.9F + boss.getRandom().nextFloat() * 0.2F);
+        level.sendParticles(TelegraphParticleRegistry.GUARD_CLASH.get(),
+                x, y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+    }
+
+    public static boolean isCurrentMeleeWarningPolluted(ChaosMonarch boss) {
+        MeleeClashState state = MELEE_CLASH_STATES.get(boss.getUUID());
+        return state != null && state.polluted;
+    }
+
+    public static void tickMeleeClashStates() {
+        Iterator<Map.Entry<UUID, MeleeClashState>> iterator = MELEE_CLASH_STATES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            MeleeClashState state = iterator.next().getValue();
+            if (state.hitConsumed || state.remainingTicks() < -20) {
+                iterator.remove();
+            }
+        }
     }
 
     public static void igniteIfNotBurning(LivingEntity target, int seconds) {
@@ -345,5 +459,31 @@ public final class ChaosMonarchTweaks {
     }
 
     private record SummonEntry(ResourceLocation id, int count) {
+    }
+
+    private static final class MeleeClashState {
+        private final int segmentIndex;
+        private final int hitFrame;
+        private final double radius;
+        private final double height;
+        private int currentFrame;
+        private boolean polluted;
+        private boolean parryQueued;
+        private boolean hitConsumed;
+        @Nullable
+        private UUID parryPlayer;
+
+        private MeleeClashState(int segmentIndex, int currentFrame, int hitFrame,
+                                double radius, double height) {
+            this.segmentIndex = segmentIndex;
+            this.currentFrame = currentFrame;
+            this.hitFrame = hitFrame;
+            this.radius = radius;
+            this.height = height;
+        }
+
+        private int remainingTicks() {
+            return (this.hitFrame - this.currentFrame) * MELEE_GOAL_TICK_SCALE;
+        }
     }
 }

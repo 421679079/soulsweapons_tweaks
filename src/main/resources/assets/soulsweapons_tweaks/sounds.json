@@ -1,0 +1,10 @@
+{
+  "just_guard_1": {
+    "sounds": [
+      {
+        "name": "soulsweapons_tweaks:just_guard_1",
+        "stream": false
+      }
+    ]
+  }
+}

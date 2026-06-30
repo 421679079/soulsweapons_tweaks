@@ -14,6 +14,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.soulsweaponry.entity.ai.goal.ChaosMonarchGoal;
@@ -188,6 +189,7 @@ public abstract class ChaosMonarchGoalMixin {
 
     @Unique
     private void starfantasy$resetGoalFields(int cooldown) {
+        ChaosMonarchTweaks.clearMeleeClashWindow(this.boss);
         this.attackStatus = 0;
         this.attackCooldown = cooldown;
         this.randomOrNot = this.boss.getRandom().nextBoolean();
@@ -269,6 +271,7 @@ public abstract class ChaosMonarchGoalMixin {
 
     @Unique
     private void starfantasy$startMelee(LivingEntity target) {
+        ChaosMonarchTweaks.clearMeleeClashWindow(this.boss);
         ChaosMonarchTweaks.teleportToMeleeStart(this.boss, target);
         this.starfantasy$meleeCooldown = starfantasy$goalCooldownTicks(MELEE_COOLDOWN_TICKS);
         this.boss.setAttack(ChaosMonarch.Attack.MELEE.ordinal());
@@ -325,13 +328,23 @@ public abstract class ChaosMonarchGoalMixin {
 
     @Unique
     private void starfantasy$tickMelee(LivingEntity target) {
+        ChaosMonarchTweaks.updateMeleeClashFrame(this.boss, this.attackStatus);
         starfantasy$warnMelee(this.attackStatus);
         ++this.attackStatus;
+        ChaosMonarchTweaks.updateMeleeClashFrame(this.boss, this.attackStatus);
         ChaosMonarchTweaks.faceTarget(this.boss, target);
         for (int i = 0; i < MELEE_HIT_FRAMES.length; ++i) {
             if (this.attackStatus == MELEE_HIT_FRAMES[i]) {
                 ChaosMonarchTweaks.chaseBeforeMeleeHit(this.boss, target, MELEE_CHASE_DISTANCE);
-                starfantasy$hitMelee(target, i);
+                if (ChaosMonarchTweaks.consumeMeleeClashParry(this.boss, i)) {
+                    ServerPlayer player = ChaosMonarchTweaks.resolveMeleeClashPlayer(this.boss);
+                    ChaosMonarchTweaks.playMeleeClashParryEffects(this.boss, player);
+                    if (player != null) {
+                        ChaosMonarchGuardBreakTracker.recordPerfectGuard(this.boss, player);
+                    }
+                } else {
+                    starfantasy$hitMelee(target, i);
+                }
                 break;
             }
         }
@@ -343,9 +356,12 @@ public abstract class ChaosMonarchGoalMixin {
     @Unique
     private void starfantasy$warnMelee(int currentFrame) {
         int previousFrame = 0;
-        for (int hitFrame : MELEE_HIT_FRAMES) {
+        for (int i = 0; i < MELEE_HIT_FRAMES.length; ++i) {
+            int hitFrame = MELEE_HIT_FRAMES[i];
             if (currentFrame == previousFrame) {
-                int warningTicks = Math.max(1, (hitFrame - previousFrame) * MELEE_GOAL_TICK_SCALE - 2);
+                int warningTicks = Math.max(1, (hitFrame - previousFrame) * MELEE_GOAL_TICK_SCALE);
+                ChaosMonarchTweaks.beginMeleeClashWindow(this.boss, i, currentFrame, hitFrame,
+                        MELEE_WARNING_RADIUS, MELEE_WARNING_HEIGHT);
                 TelegraphVfx.attackWarningRing(this.boss, warningTicks,
                         MELEE_WARNING_RADIUS, MELEE_WARNING_HEIGHT);
             }

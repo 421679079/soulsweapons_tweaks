@@ -18,6 +18,10 @@ public final class SlashBladeGuardCompat {
         return isSlashBlade(entity.getMainHandItem()) || isSlashBlade(entity.getOffhandItem());
     }
 
+    public static boolean isMainhandSlashBlade(LivingEntity entity) {
+        return isSlashBlade(entity.getMainHandItem());
+    }
+
     public static boolean isUsableMainhandSlashBlade(LivingEntity entity) {
         ItemStack stack = entity.getMainHandItem();
         if (!isSlashBlade(stack)) {

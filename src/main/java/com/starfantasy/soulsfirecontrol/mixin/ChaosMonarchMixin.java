@@ -3,6 +3,7 @@ package com.starfantasy.soulsfirecontrol.mixin;
 import com.starfantasy.soulsfirecontrol.combat.chaosmonarch.ChaosMonarchPhaseManager;
 import com.starfantasy.soulsfirecontrol.combat.chaosmonarch.ChaosMonarchAmbienceManager;
 import com.starfantasy.soulsfirecontrol.combat.guard.ChaosMonarchGuardBreakTracker;
+import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
@@ -30,6 +31,12 @@ public abstract class ChaosMonarchMixin extends BossEntity {
         ChaosMonarchPhaseManager.tick(boss);
         ChaosMonarchAmbienceManager.tick(boss);
         ChaosMonarchGuardBreakTracker.tick(boss);
+        if (boss.getAttack() != ChaosMonarch.Attack.MELEE
+                || ChaosMonarchPhaseManager.isTransitioning(boss)
+                || boss.isDeadOrDying()) {
+            ChaosMonarchTweaks.clearMeleeClashWindow(boss);
+        }
+        ChaosMonarchTweaks.tickMeleeClashStates();
     }
 
     @Inject(method = "m_6469_", at = @At("HEAD"), cancellable = true)

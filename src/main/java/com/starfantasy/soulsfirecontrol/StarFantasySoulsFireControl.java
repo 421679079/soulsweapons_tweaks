@@ -12,6 +12,7 @@ package com.starfantasy.soulsfirecontrol;
 import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
 import com.starfantasy.soulsfirecontrol.entity.TwinMeteorEntityRegistry;
 import com.starfantasy.soulsfirecontrol.network.SoulsTweaksNetwork;
+import com.starfantasy.soulsfirecontrol.sound.SoulsTweaksSoundRegistry;
 import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphParticleRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -30,6 +31,7 @@ public class StarFantasySoulsFireControl {
         SoulsTweaksNetwork.register();
         TwinMeteorEntityRegistry.register(modBus);
         TelegraphParticleRegistry.register(modBus);
+        SoulsTweaksSoundRegistry.register(modBus);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, (IConfigSpec)ChaosMonarchConfig.SPEC);
     }
 
