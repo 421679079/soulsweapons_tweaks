@@ -79,7 +79,10 @@ public final class ChaosMonarchLightningManager {
     private static final int ICE_COUNT = 5;
     private static final int ICE_INTERVAL_TICKS = 4;
     private static final double ICE_RING_RADIUS = 3.0D;
-    private static final int ICE_WARNING_TICKS = 100;
+    private static final int ICE_HOVER_TICKS = 100;
+    private static final int ICE_WARNING_LEAD_TICKS = 25;
+    private static final int ICE_WARNING_DELAY_TICKS = ICE_HOVER_TICKS - ICE_WARNING_LEAD_TICKS;
+    private static final int ICE_WARNING_TICKS = 30;
     private static final double ICE_WARNING_RADIUS = 2.5D;
     private static final float ICE_DAMAGE = 20.0F;
 
@@ -297,6 +300,13 @@ public final class ChaosMonarchLightningManager {
         invokeIfPresent(chunk, "setTarget", LivingEntity.class, target);
         invokeIfPresent(chunk, "setExtraDamage", float.class, 0.0F);
         if (level.addFreshEntity(chunk)) {
+            PENDING_ACTIONS.add(PendingAction.iceWarning(boss, chunk.getUUID(), ICE_WARNING_DELAY_TICKS));
+        }
+    }
+
+    private static void warnIceChunk(ServerLevel level, UUID chunkUuid) {
+        Entity chunk = level.getEntity(chunkUuid);
+        if (chunk != null && chunk.isAlive()) {
             TelegraphVfx.groundWarningCircleTrackingGround(chunk, ICE_WARNING_TICKS, ICE_WARNING_RADIUS, true);
         }
     }
@@ -394,6 +404,11 @@ public final class ChaosMonarchLightningManager {
                 LivingEntity target = resolveTarget(level, action.targetUuid);
                 if (target != null && target.isAlive()) {
                     spawnIceChunk(boss, target, action.index);
+                }
+            }
+            case ICE_WARNING -> {
+                if (action.targetUuid != null) {
+                    warnIceChunk(level, action.targetUuid);
                 }
             }
             case SLAM_DAMAGE -> detonateSlam(level, boss, action.center);
@@ -568,6 +583,7 @@ public final class ChaosMonarchLightningManager {
         FIRE_DAMAGE,
         SLAM_RING,
         ICE_SPAWN,
+        ICE_WARNING,
         SLAM_DAMAGE,
         FANG_SPAWN,
         PHASE_START
@@ -607,6 +623,11 @@ public final class ChaosMonarchLightningManager {
         private static PendingAction iceSpawn(ChaosMonarch boss, UUID targetUuid, int index, int delayTicks) {
             return new PendingAction(ActionKind.ICE_SPAWN, boss.level().dimension(), boss.getUUID(),
                     targetUuid, Vec3.ZERO, index, delayTicks);
+        }
+
+        private static PendingAction iceWarning(ChaosMonarch boss, UUID chunkUuid, int delayTicks) {
+            return new PendingAction(ActionKind.ICE_WARNING, boss.level().dimension(), boss.getUUID(),
+                    chunkUuid, Vec3.ZERO, 0, delayTicks);
         }
 
         private static PendingAction slamDamage(ChaosMonarch boss, Vec3 center, int delayTicks) {

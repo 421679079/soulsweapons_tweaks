@@ -1,6 +1,6 @@
 package com.starfantasy.soulsfirecontrol.util;
 
-import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
+import com.starfantasy.soulsfirecontrol.combat.chaosmonarch.ChaosMonarchPhaseManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
@@ -27,10 +27,25 @@ import net.soulsweaponry.config.ConfigConstructor;
 import net.soulsweaponry.entity.mobs.ChaosMonarch;
 
 import javax.annotation.Nullable;
-import java.util.List;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 public final class ChaosMonarchTweaks {
     public static final String NO_LOOT_SUMMON_TAG = "starfantasy_chaos_monarch_no_loot_summon";
+
+    private static final int GOETY_SUMMON_LIFETIME_TICKS = 600;
+    private static final ResourceLocation GOETY_INFERNO = new ResourceLocation("goety", "inferno");
+    private static final ResourceLocation GOETY_BLAZE_SERVANT = new ResourceLocation("goety", "blaze_servant");
+    private static final ResourceLocation GOETY_ICE_GOLEM = new ResourceLocation("goety", "ice_golem");
+    private static final ResourceLocation GOETY_BLACKGUARD_SERVANT = new ResourceLocation("goety", "blackguard_servant");
+    private static final ResourceLocation GOETY_WATCHLING_SERVANT = new ResourceLocation("goety", "watchling_servant");
+    private static final ResourceLocation GOETY_REAPER_SERVANT = new ResourceLocation("goety", "reaper_servant");
+    private static final SummonEntry[] PHASE_1_TELEPORT_SUMMONS = {new SummonEntry(GOETY_BLAZE_SERVANT, 2)};
+    private static final SummonEntry[] PHASE_2_TELEPORT_SUMMONS = {new SummonEntry(GOETY_ICE_GOLEM, 1)};
+    private static final SummonEntry[] PHASE_3_TELEPORT_SUMMONS = {new SummonEntry(GOETY_BLACKGUARD_SERVANT, 3)};
+    private static final SummonEntry[] PHASE_4_TELEPORT_SUMMONS = {new SummonEntry(GOETY_WATCHLING_SERVANT, 3)};
+    private static final SummonEntry[] PHASE_5_TELEPORT_SUMMONS = {new SummonEntry(GOETY_REAPER_SERVANT, 3)};
+    private static final SummonEntry[] PHASE_6_TELEPORT_SUMMONS = {new SummonEntry(GOETY_INFERNO, 3)};
 
     private static final double TELEPORT_MELEE_START_DISTANCE = 3.0D;
     private static final double MELEE_CLOSE_RANGE = 4.0D;
@@ -154,9 +169,7 @@ public final class ChaosMonarchTweaks {
         if (!(boss.level() instanceof ServerLevel level) || origin == null) {
             return;
         }
-        List<String> entries = ChaosMonarchConfig.getChaosMonarchTeleportSummons(
-                com.starfantasy.soulsfirecontrol.combat.chaosmonarch.ChaosMonarchPhaseManager.getCurrentPhase(boss));
-        for (SummonEntry entry : parseSummons(entries)) {
+        for (SummonEntry entry : teleportSummonsForPhase(ChaosMonarchPhaseManager.getCurrentPhase(boss))) {
             EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(entry.id);
             if (type == null) {
                 continue;
@@ -171,12 +184,15 @@ public final class ChaosMonarchTweaks {
                         Mth.floor(pos.x), Mth.floor(pos.z));
                 entity.moveTo(ground.x, ground.y, ground.z, boss.getYRot(), 0.0F);
                 entity.addTag(NO_LOOT_SUMMON_TAG);
-                if (entity instanceof Mob mob) {
-                    mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
-                            MobSpawnType.MOB_SUMMONED, (SpawnGroupData) null, null);
-                    mob.setTarget(boss.getTarget());
+                initializeGoetyServant(entity, boss);
+                if (!spawnWithGoetySummonCircle(level, ground, entity, boss)) {
+                    if (entity instanceof Mob mob) {
+                        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
+                                MobSpawnType.MOB_SUMMONED, (SpawnGroupData) null, null);
+                        mob.setTarget(boss.getTarget());
+                    }
+                    level.addFreshEntity(entity);
                 }
-                level.addFreshEntity(entity);
             }
         }
     }
@@ -277,38 +293,6 @@ public final class ChaosMonarchTweaks {
         return new Vec3(vec.x, 0.0D, vec.z);
     }
 
-    private static List<SummonEntry> parseSummons(List<String> entries) {
-        return entries.stream()
-                .map(ChaosMonarchTweaks::parseSummon)
-                .filter(entry -> entry != null)
-                .toList();
-    }
-
-    @Nullable
-    private static SummonEntry parseSummon(String entry) {
-        if (entry == null) {
-            return null;
-        }
-        String trimmed = entry.trim();
-        int split = trimmed.lastIndexOf('=');
-        if (split <= 0 || split >= trimmed.length() - 1) {
-            return null;
-        }
-        ResourceLocation id = ResourceLocation.tryParse(trimmed.substring(0, split).trim());
-        if (id == null) {
-            return null;
-        }
-        try {
-            int count = Integer.parseInt(trimmed.substring(split + 1).trim());
-            if (count < 1) {
-                return null;
-            }
-            return new SummonEntry(id, Math.min(16, count));
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
-    }
-
     private static Vec3 summonOffset(Vec3 origin, int index, int count) {
         if (count <= 1) {
             return origin;
@@ -316,6 +300,42 @@ public final class ChaosMonarchTweaks {
         double angle = Math.PI * 2.0D * index / count;
         double radius = 1.5D;
         return origin.add(Math.cos(angle) * radius, 0.0D, Math.sin(angle) * radius);
+    }
+
+    private static SummonEntry[] teleportSummonsForPhase(int phase) {
+        return switch (phase) {
+            case 2 -> PHASE_2_TELEPORT_SUMMONS;
+            case 3 -> PHASE_3_TELEPORT_SUMMONS;
+            case 4 -> PHASE_4_TELEPORT_SUMMONS;
+            case 5 -> PHASE_5_TELEPORT_SUMMONS;
+            case 6 -> PHASE_6_TELEPORT_SUMMONS;
+            default -> PHASE_1_TELEPORT_SUMMONS;
+        };
+    }
+
+    private static void initializeGoetyServant(Entity entity, ChaosMonarch boss) {
+        invokeIfPresent(entity, "setTrueOwner", new Class<?>[]{LivingEntity.class}, boss);
+        invokeIfPresent(entity, "setLimitedLife", new Class<?>[]{int.class}, GOETY_SUMMON_LIFETIME_TICKS);
+    }
+
+    private static boolean spawnWithGoetySummonCircle(ServerLevel level, Vec3 pos, Entity entity, ChaosMonarch boss) {
+        try {
+            Class<?> summonCircleClass = Class.forName("com.Polarice3.Goety.common.entities.util.SummonCircle");
+            Constructor<?> constructor = summonCircleClass.getConstructor(
+                    Level.class, Vec3.class, Entity.class, boolean.class, boolean.class, LivingEntity.class);
+            Object circle = constructor.newInstance(level, pos, entity, true, true, boss);
+            return circle instanceof Entity summonCircle && level.addFreshEntity(summonCircle);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private static void invokeIfPresent(Object target, String methodName, Class<?>[] parameterTypes, Object... args) {
+        try {
+            Method method = target.getClass().getMethod(methodName, parameterTypes);
+            method.invoke(target, args);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+        }
     }
 
     private static void syncPosition(Mob boss) {

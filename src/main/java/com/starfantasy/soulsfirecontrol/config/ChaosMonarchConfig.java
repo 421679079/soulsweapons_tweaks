@@ -25,7 +25,6 @@ public final class ChaosMonarchConfig {
     public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_4_DEBUFFS = List.of("minecraft:wither:1:200");
     public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_5_DEBUFFS = List.of("minecraft:weakness:1:200", "minecraft:poison:1:200", "minecraft:slowness:1:200", "minecraft:wither:1:200");
     public static final List<String> DEFAULT_CHAOS_MONARCH_PHASE_6_DEBUFFS = DEFAULT_CHAOS_MONARCH_PHASE_5_DEBUFFS;
-    public static final List<String> DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS = List.of("minecraft:wither_skeleton=2");
     public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS = List.of("minecraft:weakness:1:200");
     public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS = List.of("goety:freezing:1:200");
     public static final List<String> DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS = List.of("goety:spasms:10:200");
@@ -54,14 +53,9 @@ public final class ChaosMonarchConfig {
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_4_DEBUFFS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_5_DEBUFFS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_PHASE_6_DEBUFFS;
-    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS;
+    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_1_TO_5;
+    private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_6;
     private static final ForgeConfigSpec.DoubleValue CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_1;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_2;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_3;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_4;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_5;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_6;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS;
@@ -124,22 +118,17 @@ public final class ChaosMonarchConfig {
     }
 
     public static int getChaosMonarchGuardBreakRequiredGuards() {
-        return CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS.get();
+        return getChaosMonarchGuardBreakRequiredGuards(1);
+    }
+
+    public static int getChaosMonarchGuardBreakRequiredGuards(int phase) {
+        return phase >= 6
+                ? CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_6.get()
+                : CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_1_TO_5.get();
     }
 
     public static float getChaosMonarchNormalDamageMultiplier() {
         return CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER.get().floatValue();
-    }
-
-    public static List<String> getChaosMonarchTeleportSummons(int phase) {
-        return switch (phase) {
-            case 2 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_2.get());
-            case 3 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_3.get());
-            case 4 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_4.get());
-            case 5 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_5.get());
-            case 6 -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_6.get());
-            default -> ChaosMonarchConfig.castList((List) CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_1.get());
-        };
     }
 
     public static List<String> getChaosMonarchLightningHitEffects(int phase) {
@@ -278,14 +267,9 @@ public final class ChaosMonarchConfig {
         CHAOS_MONARCH_PHASE_4_DEBUFFS = builder.comment("Phase 4 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_4_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_4_DEBUFFS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_PHASE_5_DEBUFFS = builder.comment("Phase 5 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_5_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_5_DEBUFFS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_PHASE_6_DEBUFFS = builder.comment("Phase 6 debuffs applied to players fighting Chaos Monarch.").defineListAllowEmpty(List.of("phase_6_debuffs"), DEFAULT_CHAOS_MONARCH_PHASE_6_DEBUFFS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS = builder.comment("Perfect guards required to stun Chaos Monarch.").defineInRange("guard_break_required_guards", 8, 1, 100);
+        CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_1_TO_5 = builder.comment("Perfect guards required to stun Chaos Monarch in phases 1-5.").defineInRange("guard_break_required_guards_phase_1_to_5", 4, 1, 100);
+        CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_6 = builder.comment("Perfect guards required to stun Chaos Monarch in phase 6.").defineInRange("guard_break_required_guards_phase_6", 8, 1, 100);
         CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER = builder.comment("Damage multiplier while Chaos Monarch is not stunned.").defineInRange("normal_damage_multiplier", 0.5D, 0.0D, 10.0D);
-        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_1 = builder.comment("Phase 1 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_1"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_2 = builder.comment("Phase 2 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_2"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_3 = builder.comment("Phase 3 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_3"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_4 = builder.comment("Phase 4 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_4"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_5 = builder.comment("Phase 5 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_5"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
-        CHAOS_MONARCH_TELEPORT_SUMMONS_PHASE_6 = builder.comment("Phase 6 mobs summoned by normal TELEPORT.").defineListAllowEmpty(List.of("teleport_summons_phase_6"), DEFAULT_CHAOS_MONARCH_TELEPORT_SUMMONS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS = builder.comment("Phase 1 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_1_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS = builder.comment("Phase 2 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_2_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS = builder.comment("Phase 3 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_3_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS, ChaosMonarchConfig::isValidString);

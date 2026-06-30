@@ -176,7 +176,7 @@ public class ChaosBarrageProjectileEntity extends Projectile {
         if (boss == null || this.configuredDamage <= 0.0F) {
             return;
         }
-        DamageSource source = this.getStyle() == STYLE_WITHER_SKULL
+        DamageSource source = this.effectPhase >= 6 || this.getStyle() == STYLE_WITHER_SKULL
                 ? this.damageSources().fellOutOfWorld()
                 : this.damageSources().indirectMagic(this, owner == null ? this : owner);
         List<ConfiguredMobEffect> effects = hitEffects(boss);

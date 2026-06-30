@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -36,19 +37,20 @@ public final class ChaosMonarchPhaseEvents {
         if (ChaosMonarchPhaseManager.bypassesPhaseLock(event.getSource())) {
             return;
         }
-        if (ChaosMonarchPhaseManager.isTransitioning(boss)) {
-            event.setAmount(0.0F);
-            return;
-        }
         float amount = event.getAmount();
         if (!ChaosMonarchGuardBreakTracker.isStunned(boss)) {
             amount *= ChaosMonarchConfig.getChaosMonarchNormalDamageMultiplier();
         }
-        if (ChaosMonarchPhaseManager.handleIncomingDamage(boss, amount)) {
-            event.setAmount(0.0F);
-        } else {
-            event.setAmount(amount);
+        event.setAmount(amount);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onChaosMonarchDamage(LivingDamageEvent event) {
+        if (!(event.getEntity() instanceof ChaosMonarch boss)) {
+            return;
         }
+        event.setAmount(ChaosMonarchPhaseManager.clampFinalDamageForPhaseLock(
+                boss, event.getSource(), event.getAmount()));
     }
 
     @SubscribeEvent

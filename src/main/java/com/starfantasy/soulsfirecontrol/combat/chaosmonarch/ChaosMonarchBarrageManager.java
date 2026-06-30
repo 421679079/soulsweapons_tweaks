@@ -5,12 +5,12 @@ import com.starfantasy.soulsfirecontrol.config.ChaosMonarchConfig;
 import com.starfantasy.soulsfirecontrol.entity.ChaosBarrageProjectileEntity;
 import com.starfantasy.soulsfirecontrol.entity.ChaosWitherSkullProjectileEntity;
 import com.starfantasy.soulsfirecontrol.entity.TwinMeteorEntityRegistry;
+import com.starfantasy.soulsfirecontrol.util.ChaosMonarchTweaks;
 import com.starfantasy.soulsfirecontrol.vfx.telegraph.TelegraphVfx;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -40,6 +40,7 @@ public final class ChaosMonarchBarrageManager {
     private static final double STREAM_PROJECTILE_SPEED = PROJECTILE_SPEED * 2.0D;
     private static final float MAGIC_DAMAGE = 20.0F;
     private static final float WITHER_SKULL_DAMAGE = 10.0F;
+    private static final float PHASE_SIX_VOID_DAMAGE = 15.0F;
 
     private static final List<PendingShot> PENDING_SHOTS = new ArrayList<>();
 
@@ -106,7 +107,7 @@ public final class ChaosMonarchBarrageManager {
         if (phase >= 6) {
             int[] styles = shuffledStyles(boss.getRandom());
             for (int i = 0; i < FAN_COUNTS.length; ++i) {
-                scheduleShot(boss, target, styles[i], styles[i], FAN_COUNTS[i], true,
+                scheduleShot(boss, target, styles[i], 6, FAN_COUNTS[i], true,
                         PROJECTILE_SPEED, WARNING_TICKS + i * FAN_INTERVAL_TICKS);
             }
             return;
@@ -122,7 +123,7 @@ public final class ChaosMonarchBarrageManager {
         if (phase >= 6) {
             int[] styles = shuffledPhaseSixStream(boss.getRandom());
             for (int i = 0; i < styles.length; ++i) {
-                scheduleShot(boss, target, styles[i], styles[i], 1, false,
+                scheduleShot(boss, target, styles[i], 6, 1, false,
                         STREAM_PROJECTILE_SPEED, WARNING_TICKS + i * STREAM_INTERVAL_TICKS);
             }
             return;
@@ -179,7 +180,7 @@ public final class ChaosMonarchBarrageManager {
         Vec3 direction = aimedDirection(start, target, yawOffsetDegrees);
         projectile.moveTo(start.x, start.y, start.z, boss.getYRot(), boss.getXRot());
         projectile.configureBarrage(boss, style, effectPhase,
-                direction.scale(projectileSpeed), damageForStyle(style));
+                direction.scale(projectileSpeed), damageForStyle(style, effectPhase));
         level.addFreshEntity(projectile);
     }
 
@@ -192,7 +193,8 @@ public final class ChaosMonarchBarrageManager {
         Vec3 start = boss.getEyePosition().add(0.0D, -0.1D, 0.0D);
         Vec3 direction = aimedDirection(start, target, yawOffsetDegrees);
         skull.moveTo(start.x, start.y, start.z, boss.getYRot(), boss.getXRot());
-        skull.configureBarrage(boss, effectPhase, direction.scale(projectileSpeed), WITHER_SKULL_DAMAGE);
+        skull.configureBarrage(boss, effectPhase, direction.scale(projectileSpeed),
+                damageForStyle(ChaosBarrageProjectileEntity.STYLE_WITHER_SKULL, effectPhase));
         level.addFreshEntity(skull);
     }
 
@@ -207,7 +209,7 @@ public final class ChaosMonarchBarrageManager {
         double sin = Math.sin(radians);
         Vec3 base = horizontal.normalize();
         Vec3 rotated = new Vec3(base.x * cos - base.z * sin, 0.0D, base.x * sin + base.z * cos);
-        double y = Mth.clamp(toTarget.y / Math.max(2.0D, horizontal.length()), -0.45D, 0.45D);
+        double y = toTarget.y / Math.max(1.0E-4D, horizontal.length());
         return new Vec3(rotated.x, y, rotated.z).normalize();
     }
 
@@ -221,8 +223,11 @@ public final class ChaosMonarchBarrageManager {
         };
     }
 
-    private static float damageForStyle(int style) {
-        return style == ChaosBarrageProjectileEntity.STYLE_WITHER_SKULL ? WITHER_SKULL_DAMAGE : MAGIC_DAMAGE;
+    private static float damageForStyle(int style, int effectPhase) {
+        float damage = effectPhase >= 6
+                ? PHASE_SIX_VOID_DAMAGE
+                : style == ChaosBarrageProjectileEntity.STYLE_WITHER_SKULL ? WITHER_SKULL_DAMAGE : MAGIC_DAMAGE;
+        return ChaosMonarchTweaks.modifiedDamage(damage);
     }
 
     private static int[] shuffledStyles(RandomSource random) {

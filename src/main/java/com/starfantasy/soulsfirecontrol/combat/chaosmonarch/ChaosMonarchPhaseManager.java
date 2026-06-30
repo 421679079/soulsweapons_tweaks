@@ -90,28 +90,31 @@ public final class ChaosMonarchPhaseManager {
         }
     }
 
-    public static boolean handleIncomingDamage(ChaosMonarch boss, float amount) {
+    public static float clampFinalDamageForPhaseLock(ChaosMonarch boss, DamageSource source, float amount) {
         if (boss.level().isClientSide() || !boss.isAlive()) {
-            return false;
+            return amount;
+        }
+        if (bypassesPhaseLock(source)) {
+            return amount;
         }
         if (isTransitioning(boss)) {
-            return true;
+            return 0.0F;
         }
         if (amount <= 0.0F) {
-            return false;
+            return amount;
         }
         int phase = getCurrentPhase(boss);
         if (phase >= LAST_PHASE) {
-            return false;
+            return amount;
         }
         float thresholdHealth = boss.getMaxHealth() * thresholdForPhase(phase + 1);
-        float projectedHealth = boss.getHealth() - amount;
+        float currentHealth = boss.getHealth();
+        float projectedHealth = currentHealth - amount;
         if (projectedHealth > thresholdHealth) {
-            return false;
+            return amount;
         }
-        boss.setHealth(Math.max(1.0F, thresholdHealth));
         startTransition(boss, phase + 1);
-        return true;
+        return Math.max(0.0F, currentHealth - Math.max(1.0F, thresholdHealth));
     }
 
     public static boolean isTransitioning(ChaosMonarch boss) {
@@ -140,6 +143,16 @@ public final class ChaosMonarchPhaseManager {
         return true;
     }
 
+    public static void requestGoalReset(ChaosMonarch boss) {
+        boss.getPersistentData().putBoolean(GOAL_RESET_KEY, true);
+    }
+
+    public static void requestForcedLightning(ChaosMonarch boss) {
+        CompoundTag data = boss.getPersistentData();
+        data.putBoolean(GOAL_RESET_KEY, true);
+        data.putBoolean(FORCE_LIGHTNING_KEY, true);
+    }
+
     public static int getCurrentPhase(ChaosMonarch boss) {
         CompoundTag data = boss.getPersistentData();
         int phase = data.getInt(PHASE_KEY);
@@ -159,7 +172,7 @@ public final class ChaosMonarchPhaseManager {
         boss.setAggressive(true);
         boss.getNavigation().stop();
         boss.setDeltaMovement(0.0D, boss.getDeltaMovement().y, 0.0D);
-        spawnTransitionWarnings(boss);
+        spawnTransitionWarnings(boss, targetPhase);
     }
 
     private static void tickTransition(ChaosMonarch boss) {
@@ -173,7 +186,7 @@ public final class ChaosMonarchPhaseManager {
         boss.setDeltaMovement(0.0D, boss.getDeltaMovement().y, 0.0D);
 
         if (ticks == TRANSITION_EXPLOSION_TICK) {
-            explodeTransition(boss);
+            explodeTransition(boss, targetPhase);
             setCurrentPhase(boss, targetPhase);
         }
         spawnStepVisualsIfDue(boss, targetPhase, ticks);
@@ -251,13 +264,15 @@ public final class ChaosMonarchPhaseManager {
         return Math.max(FIRST_PHASE, Math.min(LAST_PHASE, phase));
     }
 
-    private static void explodeTransition(ChaosMonarch boss) {
+    private static void explodeTransition(ChaosMonarch boss, int targetPhase) {
         Level level = boss.level();
         level.playSound(null, boss.blockPosition(), SoundEvents.GENERIC_EXPLODE,
                 SoundSource.HOSTILE, 5.0F, 1.0F);
         Vec3 center = boss.position();
         AABB area = boss.getBoundingBox().inflate(TRANSITION_DAMAGE_RADIUS);
-        DamageSource source = level.damageSources().indirectMagic(boss, boss);
+        DamageSource source = targetPhase >= LAST_PHASE
+                ? level.damageSources().fellOutOfWorld()
+                : level.damageSources().indirectMagic(boss, boss);
         for (Entity entity : level.getEntities(boss, area)) {
             if (!(entity instanceof LivingEntity target) || target == boss) {
                 continue;
@@ -276,14 +291,24 @@ public final class ChaosMonarchPhaseManager {
         }
     }
 
-    private static void spawnTransitionWarnings(ChaosMonarch boss) {
+    private static void spawnTransitionWarnings(ChaosMonarch boss, int targetPhase) {
         int warningTicks = Math.max(1, TRANSITION_EXPLOSION_TICK);
-        TelegraphVfx.redAttackWarningRing(boss, warningTicks,
-                TRANSITION_DAMAGE_RADIUS, TRANSITION_RING_WARNING_HEIGHT);
+        if (targetPhase >= LAST_PHASE) {
+            TelegraphVfx.purpleAttackWarningRing(boss, warningTicks,
+                    TRANSITION_DAMAGE_RADIUS, TRANSITION_RING_WARNING_HEIGHT);
+        } else {
+            TelegraphVfx.redAttackWarningRing(boss, warningTicks,
+                    TRANSITION_DAMAGE_RADIUS, TRANSITION_RING_WARNING_HEIGHT);
+        }
         Vec3 ground = groundCenterAt(boss.level(), boss.getX(), boss.getY() + 8.0D, boss.getZ(),
                 Mth.floor(boss.getX()), Mth.floor(boss.getZ()));
-        TelegraphVfx.redGroundWarningCircle(boss, ground.add(0.0D, 0.06D, 0.0D),
-                warningTicks, TRANSITION_DAMAGE_RADIUS);
+        if (targetPhase >= LAST_PHASE) {
+            TelegraphVfx.purpleGroundWarningCircle(boss, ground.add(0.0D, 0.06D, 0.0D),
+                    warningTicks, TRANSITION_DAMAGE_RADIUS);
+        } else {
+            TelegraphVfx.redGroundWarningCircle(boss, ground.add(0.0D, 0.06D, 0.0D),
+                    warningTicks, TRANSITION_DAMAGE_RADIUS);
+        }
     }
 
     private static void spawnStepVisualsIfDue(ChaosMonarch boss, int targetPhase, int transitionTicks) {

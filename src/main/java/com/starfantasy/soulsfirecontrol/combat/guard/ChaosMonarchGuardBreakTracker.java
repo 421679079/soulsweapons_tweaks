@@ -29,7 +29,7 @@ public final class ChaosMonarchGuardBreakTracker {
         if (boss.level().isClientSide() || boss.isDeadOrDying() || ChaosMonarchPhaseManager.isTransitioning(boss)) {
             return;
         }
-        int required = requiredGuards();
+        int required = requiredGuards(boss);
         GuardBreakState state = STATES.computeIfAbsent(boss.getUUID(), uuid -> new GuardBreakState());
         if (state.stunTicks > 0 || isOnCooldown(boss.tickCount, state.lastGuardTick)) {
             return;
@@ -48,7 +48,7 @@ public final class ChaosMonarchGuardBreakTracker {
         if (boss.level().isClientSide() || boss.isDeadOrDying() || ChaosMonarchPhaseManager.isTransitioning(boss)) {
             return;
         }
-        int required = requiredGuards();
+        int required = requiredGuards(boss);
         GuardBreakState state = STATES.get(boss.getUUID());
         if (state == null || state.stunTicks > 0 || state.guardCount <= 0
                 || isOnCooldown(boss.tickCount, state.lastHitTick)) {
@@ -63,8 +63,11 @@ public final class ChaosMonarchGuardBreakTracker {
         if (boss.level().isClientSide()) {
             return;
         }
-        int required = requiredGuards();
+        int required = requiredGuards(boss);
         GuardBreakState state = STATES.get(boss.getUUID());
+        if (state != null) {
+            state.guardCount = Math.min(state.guardCount, required);
+        }
         if (boss.isDeadOrDying()) {
             STATES.remove(boss.getUUID());
             GuardBreakHudSync.clearOrReset(boss, required);
@@ -108,16 +111,17 @@ public final class ChaosMonarchGuardBreakTracker {
     public static void clearStunAndReset(ChaosMonarch boss) {
         GuardBreakState state = STATES.get(boss.getUUID());
         if (state == null) {
-            GuardBreakHudSync.syncIdle(boss, requiredGuards());
+            GuardBreakHudSync.syncIdle(boss, requiredGuards(boss));
             return;
         }
         state.stunTicks = 0;
         state.guardCount = 0;
-        GuardBreakHudSync.syncIdle(boss, requiredGuards());
+        GuardBreakHudSync.syncIdle(boss, requiredGuards(boss));
     }
 
-    private static int requiredGuards() {
-        return Math.max(1, ChaosMonarchConfig.getChaosMonarchGuardBreakRequiredGuards());
+    private static int requiredGuards(ChaosMonarch boss) {
+        return Math.max(1, ChaosMonarchConfig.getChaosMonarchGuardBreakRequiredGuards(
+                ChaosMonarchPhaseManager.getCurrentPhase(boss)));
     }
 
     private static boolean isOnCooldown(int currentTick, int lastTick) {
@@ -138,6 +142,11 @@ public final class ChaosMonarchGuardBreakTracker {
         state.guardCount = 0;
         state.stunTicks = 0;
         boss.setAggressive(true);
+        if (ChaosMonarchPhaseManager.getCurrentPhase(boss) >= 6) {
+            ChaosMonarchPhaseManager.requestForcedLightning(boss);
+        } else {
+            ChaosMonarchPhaseManager.requestGoalReset(boss);
+        }
         GuardBreakHudSync.syncIdle(boss, required);
     }
 

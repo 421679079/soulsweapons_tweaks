@@ -34,15 +34,31 @@ public abstract class ChaosMonarchGoalMixin {
     @Unique
     private static final int TELEPORT_COOLDOWN_TICKS = 300;
     @Unique
+    private static final int TELEPORT_SUMMON_FRAME = 13;
+    @Unique
+    private static final int TELEPORT_MOVE_FRAME = 23;
+    @Unique
     private static final int LIGHTNING_COOLDOWN_TICKS = 300;
     @Unique
     private static final int MELEE_COOLDOWN_TICKS = 240;
     @Unique
-    private static final int PHASE_SIX_LIGHTNING_DURATION_TICKS = 175;
-    @Unique
     private static final int[] MELEE_HIT_FRAMES = {8, 16, 27, 39};
     @Unique
     private static final int MELEE_GOAL_TICK_SCALE = 2;
+    @Unique
+    private static final int PHASE_SIX_STEP_LIGHTNING = 0;
+    @Unique
+    private static final int PHASE_SIX_STEP_BARRAGE_ONE = 1;
+    @Unique
+    private static final int PHASE_SIX_STEP_BARRAGE_TWO = 2;
+    @Unique
+    private static final int PHASE_SIX_STEP_BARRAGE_THREE = 3;
+    @Unique
+    private static final int PHASE_SIX_STEP_MELEE = 4;
+    @Unique
+    private static final int PHASE_SIX_STEP_TELEPORT = 5;
+    @Unique
+    private static final int PHASE_SIX_SEQUENCE_LENGTH = 6;
     @Unique
     private static final double MELEE_WARNING_RADIUS = 5.5D;
     @Unique
@@ -58,6 +74,10 @@ public abstract class ChaosMonarchGoalMixin {
     private int starfantasy$meleeCooldown;
     @Unique
     private int starfantasy$barrageResetFrame = 30;
+    @Unique
+    private int starfantasy$phaseSixSequenceStep = PHASE_SIX_STEP_LIGHTNING;
+    @Unique
+    private int starfantasy$lastKnownPhase = 1;
 
     @Shadow
     @Final
@@ -119,11 +139,15 @@ public abstract class ChaosMonarchGoalMixin {
             return;
         }
         if (ChaosMonarchGuardBreakTracker.isStunned(this.boss)) {
+            starfantasy$resetPhaseSixSequence();
             starfantasy$resetGoalFields(20);
             this.boss.getNavigation().stop();
             ci.cancel();
             return;
         }
+
+        int phase = ChaosMonarchPhaseManager.getCurrentPhase(this.boss);
+        starfantasy$syncPhaseSixSequence(phase);
 
         if (this.starfantasy$teleportCooldown > 0) {
             --this.starfantasy$teleportCooldown;
@@ -137,6 +161,10 @@ public abstract class ChaosMonarchGoalMixin {
         --this.attackCooldown;
         LivingEntity target = this.boss.getTarget();
         if (target == null || !target.isAlive()) {
+            starfantasy$resetPhaseSixSequence();
+            if (phase >= 6) {
+                starfantasy$resetGoalFields(0);
+            }
             ci.cancel();
             return;
         }
@@ -174,6 +202,14 @@ public abstract class ChaosMonarchGoalMixin {
     private void starfantasy$selectAttack(LivingEntity target) {
         this.attackStatus = 0;
         this.blockPos = null;
+        int phase = ChaosMonarchPhaseManager.getCurrentPhase(this.boss);
+        if (phase >= 6) {
+            if (ChaosMonarchPhaseManager.consumeForcedLightning(this.boss)) {
+                this.starfantasy$phaseSixSequenceStep = PHASE_SIX_STEP_LIGHTNING;
+            }
+            starfantasy$startPhaseSixSequenceAttack(target);
+            return;
+        }
         if (ChaosMonarchPhaseManager.consumeForcedLightning(this.boss)) {
             starfantasy$startLightning();
             return;
@@ -191,6 +227,44 @@ public abstract class ChaosMonarchGoalMixin {
             return;
         }
         starfantasy$startBarrage(target);
+    }
+
+    @Unique
+    private void starfantasy$startPhaseSixSequenceAttack(LivingEntity target) {
+        switch (this.starfantasy$phaseSixSequenceStep) {
+            case PHASE_SIX_STEP_LIGHTNING -> starfantasy$startLightning();
+            case PHASE_SIX_STEP_BARRAGE_ONE, PHASE_SIX_STEP_BARRAGE_TWO, PHASE_SIX_STEP_BARRAGE_THREE ->
+                    starfantasy$startBarrage(target);
+            case PHASE_SIX_STEP_MELEE -> starfantasy$startMelee(target);
+            case PHASE_SIX_STEP_TELEPORT -> this.boss.setAttack(ChaosMonarch.Attack.TELEPORT.ordinal());
+            default -> {
+                this.starfantasy$phaseSixSequenceStep = PHASE_SIX_STEP_LIGHTNING;
+                starfantasy$startLightning();
+            }
+        }
+    }
+
+    @Unique
+    private void starfantasy$finishAttack(float cooldownModifier) {
+        if (ChaosMonarchPhaseManager.getCurrentPhase(this.boss) >= 6) {
+            this.starfantasy$phaseSixSequenceStep =
+                    (this.starfantasy$phaseSixSequenceStep + 1) % PHASE_SIX_SEQUENCE_LENGTH;
+        }
+        this.resetAttack(cooldownModifier);
+    }
+
+    @Unique
+    private void starfantasy$syncPhaseSixSequence(int phase) {
+        if ((phase >= 6 && this.starfantasy$lastKnownPhase < 6)
+                || (phase < 6 && this.starfantasy$lastKnownPhase >= 6)) {
+            starfantasy$resetPhaseSixSequence();
+        }
+        this.starfantasy$lastKnownPhase = phase;
+    }
+
+    @Unique
+    private void starfantasy$resetPhaseSixSequence() {
+        this.starfantasy$phaseSixSequenceStep = PHASE_SIX_STEP_LIGHTNING;
     }
 
     @Unique
@@ -227,12 +301,13 @@ public abstract class ChaosMonarchGoalMixin {
                     this.boss.getX(), this.boss.getY(), this.boss.getZ(),
                     (ParticleOptions) ParticleTypes.PORTAL, 6.0F);
         }
-        if (this.attackStatus == 23) {
-            Vec3 origin = this.boss.position();
+        if (this.attackStatus == TELEPORT_SUMMON_FRAME) {
+            ChaosMonarchTweaks.summonTeleportMobs(this.boss, this.boss.position());
+        }
+        if (this.attackStatus == TELEPORT_MOVE_FRAME) {
             this.boss.level().playSound(null, this.boss.getX(), this.boss.getY(), this.boss.getZ(),
                     SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0F, 1.0F);
             boolean teleported = ChaosMonarchTweaks.teleportForTeleportAttack(this.boss, target);
-            ChaosMonarchTweaks.summonTeleportMobs(this.boss, origin);
             if (teleported) {
                 if (!this.boss.level().isClientSide) {
                     ParticleHandler.particleSphereList(this.boss.level(), 1000,
@@ -244,7 +319,7 @@ public abstract class ChaosMonarchGoalMixin {
         }
         if (this.attackStatus >= 30) {
             this.starfantasy$teleportCooldown = TELEPORT_COOLDOWN_TICKS;
-            this.resetAttack(0.5F);
+            starfantasy$finishAttack(0.5F);
         }
     }
 
@@ -261,7 +336,7 @@ public abstract class ChaosMonarchGoalMixin {
             }
         }
         if (this.attackStatus >= 45) {
-            this.resetAttack(1.0F);
+            starfantasy$finishAttack(1.0F);
         }
     }
 
@@ -338,11 +413,8 @@ public abstract class ChaosMonarchGoalMixin {
             ChaosMonarchLightningManager.startLightning(this.boss,
                     ChaosMonarchPhaseManager.getCurrentPhase(this.boss), target);
         }
-        int resetFrame = ChaosMonarchPhaseManager.getCurrentPhase(this.boss) >= 6
-                ? 15 + starfantasy$goalCooldownTicks(PHASE_SIX_LIGHTNING_DURATION_TICKS)
-                : 30;
-        if (this.attackStatus >= resetFrame) {
-            this.resetAttack(1.0F);
+        if (this.attackStatus >= 30) {
+            starfantasy$finishAttack(1.0F);
         }
     }
 
@@ -351,7 +423,7 @@ public abstract class ChaosMonarchGoalMixin {
         ++this.attackStatus;
         this.boss.getLookControl().setLookAt(target.getX(), target.getEyeY(), target.getZ());
         if (this.attackStatus >= this.starfantasy$barrageResetFrame) {
-            this.resetAttack(1.0F);
+            starfantasy$finishAttack(1.0F);
         }
     }
 }
