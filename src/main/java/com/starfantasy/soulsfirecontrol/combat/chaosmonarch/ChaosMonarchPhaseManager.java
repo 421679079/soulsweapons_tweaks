@@ -69,6 +69,7 @@ public final class ChaosMonarchPhaseManager {
     private static final int STEP_VISUAL_DURATION_TICKS = 14;
     private static final int DEBUFF_REFRESH_INTERVAL_TICKS = 20;
     private static final int DEBUFF_REFRESH_THRESHOLD_TICKS = 60;
+    private static final int PHASE_SIX_HEAL_INTERVAL_TICKS = 20;
 
     private ChaosMonarchPhaseManager() {
     }
@@ -84,6 +85,7 @@ public final class ChaosMonarchPhaseManager {
         }
         int phase = getCurrentPhase(boss);
         applyDisplay(boss, phase);
+        tickPhaseSixHealing(boss, phase);
         BossPhaseBuffManager.tickChaosMonarch(boss, phase);
         if (boss.tickCount % DEBUFF_REFRESH_INTERVAL_TICKS == 0) {
             applyNearbyDebuffs(boss, phase);
@@ -249,6 +251,21 @@ public final class ChaosMonarchPhaseManager {
             case 6 -> 0.25F;
             default -> 1.0F;
         };
+    }
+
+    private static void tickPhaseSixHealing(ChaosMonarch boss, int phase) {
+        if (phase < LAST_PHASE || boss.tickCount % PHASE_SIX_HEAL_INTERVAL_TICKS != 0) {
+            return;
+        }
+        float heal = ChaosMonarchConfig.getChaosMonarchPhaseSixHealPerSecond();
+        if (heal <= 0.0F) {
+            return;
+        }
+        float cap = boss.getMaxHealth() * thresholdForPhase(LAST_PHASE);
+        if (boss.getHealth() >= cap) {
+            return;
+        }
+        boss.setHealth(Math.min(cap, boss.getHealth() + heal));
     }
 
     private static int transitionTarget(ChaosMonarch boss) {

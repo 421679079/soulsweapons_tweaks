@@ -56,6 +56,7 @@ public final class ChaosMonarchConfig {
     private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_1_TO_5;
     private static final ForgeConfigSpec.IntValue CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_6;
     private static final ForgeConfigSpec.DoubleValue CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER;
+    private static final ForgeConfigSpec.DoubleValue CHAOS_MONARCH_PHASE_6_HEAL_PER_SECOND;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS;
@@ -129,6 +130,10 @@ public final class ChaosMonarchConfig {
 
     public static float getChaosMonarchNormalDamageMultiplier() {
         return CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER.get().floatValue();
+    }
+
+    public static float getChaosMonarchPhaseSixHealPerSecond() {
+        return CHAOS_MONARCH_PHASE_6_HEAL_PER_SECOND.get().floatValue();
     }
 
     public static List<String> getChaosMonarchLightningHitEffects(int phase) {
@@ -270,6 +275,7 @@ public final class ChaosMonarchConfig {
         CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_1_TO_5 = builder.comment("Perfect guards required to stun Chaos Monarch in phases 1-5.").defineInRange("guard_break_required_guards_phase_1_to_5", 4, 1, 100);
         CHAOS_MONARCH_GUARD_BREAK_REQUIRED_GUARDS_PHASE_6 = builder.comment("Perfect guards required to stun Chaos Monarch in phase 6.").defineInRange("guard_break_required_guards_phase_6", 8, 1, 100);
         CHAOS_MONARCH_NORMAL_DAMAGE_MULTIPLIER = builder.comment("Damage multiplier while Chaos Monarch is not stunned.").defineInRange("normal_damage_multiplier", 0.5D, 0.0D, 10.0D);
+        CHAOS_MONARCH_PHASE_6_HEAL_PER_SECOND = builder.comment("Health restored each second in phase 6.").defineInRange("phase_6_heal_per_second", 2.0D, 0.0D, 1000.0D);
         CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS = builder.comment("Phase 1 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_1_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_1_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS = builder.comment("Phase 2 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_2_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_2_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
         CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS = builder.comment("Phase 3 LIGHTNING hit effects.").defineListAllowEmpty(List.of("lightning_phase_3_hit_effects"), DEFAULT_CHAOS_MONARCH_LIGHTNING_PHASE_3_HIT_EFFECTS, ChaosMonarchConfig::isValidString);
